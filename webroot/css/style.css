@@ -1149,3 +1149,181 @@ h3,
   grid-column: auto;
   justify-self: auto;
 }
+
+/* ==========================================
+   Hearthroot Seasonal Themes
+   ========================================== */
+
+/* Backgrounds */
+:root[data-season="default"] .scene {
+  background-image: url("../assets/moonlit-cottage.webp");
+}
+
+:root[data-season="halloween"] .scene {
+  background-image: url("../assets/seasons/halloween.webp");
+}
+
+:root[data-season="christmas"] .scene {
+  background-image: url("../assets/seasons/christmas.webp");
+}
+
+/* Seasonal settings panel */
+.seasonal-settings {
+  margin-top: 18px;
+  padding: 22px;
+}
+
+.seasonal-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.seasonal-heading small {
+  font-size: 10px;
+  letter-spacing: .18em;
+  opacity: .8;
+}
+
+.seasonal-heading h2 {
+  margin: 6px 0 0;
+  font-family: Georgia, serif;
+  font-size: 25px;
+  font-weight: 400;
+}
+
+.seasonal-settings p {
+  margin: 12px 0 18px;
+  font-size: 13px;
+  opacity: .85;
+}
+
+.seasonal-settings label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+#season-select {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid rgba(175, 221, 188, .4);
+  border-radius: 12px;
+  background: rgba(8, 42, 31, .75);
+  color: #f1eadb;
+  font: 14px system-ui, sans-serif;
+  outline: none;
+}
+
+#season-select:focus-visible {
+  border-color: rgba(190, 238, 202, .9);
+}
+
+/* Keep the selected image stable across all themes */
+.scene {
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* ==========================================
+   Hearthroot Seasonal Glass
+   ========================================== */
+
+/* Halloween: dark plum glass */
+:root[data-season="halloween"] .glass {
+  background: rgba(38, 20, 34, .43) !important;
+  border-color: rgba(232, 160, 91, .38);
+}
+
+:root[data-season="halloween"] .glass::before {
+  background-image:
+    url("../assets/seasons/halloween-pattern.svg");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+  opacity: .24;
+}
+
+/* Christmas: evergreen glass */
+:root[data-season="christmas"] .glass {
+  background: rgba(16, 58, 43, .43) !important;
+  border-color: rgba(233, 214, 166, .38);
+}
+
+:root[data-season="christmas"] .glass::before {
+  background-image:
+    url("../assets/seasons/christmas-pattern.svg");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+  opacity: .24;
+}
+
+/* Keep technical text above seasonal patterns */
+:root[data-season="halloween"] .glass > *,
+:root[data-season="christmas"] .glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Seasonal selector accents */
+:root[data-season="halloween"] #season-select {
+  border-color: rgba(232, 160, 91, .5);
+}
+
+:root[data-season="christmas"] #season-select {
+  border-color: rgba(233, 214, 166, .5);
+}
+
+/* ==========================================
+   Hearthroot Seasonal Glass v2
+   Detailed ornamental textures
+   ========================================== */
+
+/* Halloween: translucent plum-emerald glass */
+:root[data-season="halloween"] .glass {
+  background-color: rgba(27, 26, 35, .50) !important;
+  border-color: rgba(232, 160, 91, .30);
+}
+
+/* Christmas: translucent evergreen glass */
+:root[data-season="christmas"] .glass {
+  background-color: rgba(14, 48, 38, .50) !important;
+  border-color: rgba(233, 214, 166, .30);
+}
+
+/* Halloween ornamental layer */
+:root[data-season="halloween"] .glass::before {
+  background-image:
+    url("../assets/seasons/halloween-ornament.png") !important;
+  background-size: 330px 330px;
+  background-repeat: repeat;
+  background-position: center top;
+  opacity: .24 !important;
+}
+
+/* Christmas ornamental layer */
+:root[data-season="christmas"] .glass::before {
+  background-image:
+    url("../assets/seasons/christmas-ornament.png") !important;
+  background-size: 330px 330px;
+  background-repeat: repeat;
+  background-position: center top;
+  opacity: .24 !important;
+}
+
+/* Preserve legibility above the decorations */
+:root[data-season="halloween"] .glass > *,
+:root[data-season="christmas"] .glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Slightly stronger glass for diagnostic cards */
+:root[data-season="halloween"] .diag-card {
+  background-color: rgba(28, 24, 33, .60) !important;
+}
+
+:root[data-season="christmas"] .diag-card {
+  background-color: rgba(13, 43, 34, .60) !important;
+}
