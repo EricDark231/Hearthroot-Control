@@ -1,0 +1,10 @@
+# Generated packages
+*.zip
+
+# Temporary files
+*.tmp
+*.log
+
+# Editor files
+.vscode/
+.idea/
