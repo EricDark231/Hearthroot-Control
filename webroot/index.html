@@ -1,4 +1,30 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#172535"><title>Hearthroot Control</title><link rel="stylesheet" href="css/style.css"></head><body><div class="scene" aria-hidden="true"></div><div class="shade" aria-hidden="true"></div><main class="shell"><header class="mast"><div class="kicker">H E A R T H R O O T  ·  P R O J E C T</div><div class="topline"><span class="ornament">✦</span><span id="season-name">Moonlit Cottage</span></div><h1>Hearthroot<br><em>Control</em></h1><p class="tagline">A quiet place to tend your kernel.</p></header><div class="breathing-space" aria-hidden="true"></div><section class="glass status" aria-label="Device information"><div><small>DEVICE</small><strong id="device-model">Detecting...</strong><span id="device-codename">Waiting for device</span></div><div class="status-side"><small>INTERFACE</small><strong>Visual preview</strong><span>No kernel changes</span></div></section><section class="glass profiles"><div class="section-heading"><div><small>THE KERNEL GARDEN</small><h2>Choose your path</h2></div><span class="tiny-ornament">❧</span></div><div class="choices" role="group" aria-label="Preview profiles"><button type="button" class="choice" data-profile="Balanced" aria-pressed="false"><span class="sigil">Ⅰ</span><strong>Balanced</strong><span>Gentle harmony</span></button><button type="button" class="choice selected" data-profile="Native" aria-pressed="true"><span class="sigil">Ⅱ</span><strong>Native</strong><span>Original roots</span></button><button type="button" class="choice" data-profile="Battery Saver" aria-pressed="false"><span class="sigil">Ⅲ</span><strong>Battery Saver</strong><span>Quiet endurance</span></button><button type="button" class="choice" data-profile="Experimental" aria-pressed="false"><span class="sigil">Ⅳ</span><strong>Experimental</strong><span>Beyond the grove</span></button></div><div class="notice" role="status" id="preview-status">Native selected for preview. No changes applied.</div></section>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#172535"><title>Hearthroot Control</title><link rel="stylesheet" href="css/style.css"></head><body><div class="scene" aria-hidden="true"></div><div class="shade" aria-hidden="true"></div><main class="shell"><header class="mast"><div class="kicker">H E A R T H R O O T  ·  P R O J E C T</div><div class="topline"><span class="ornament">✦</span><span id="season-name">Moonlit Cottage</span></div><h1>Hearthroot<br><em>Control</em></h1><p class="tagline">A quiet place to tend your kernel.</p></header><div class="breathing-space" aria-hidden="true"></div><section class="glass status" aria-label="Device information"><div><small>DEVICE</small><strong id="device-model">Detecting...</strong><span id="device-codename">Waiting for device</span></div><div class="status-side"><small>INTERFACE</small><strong>Visual preview</strong><span>No kernel changes</span></div></section><section class="glass profiles"><div class="section-heading"><div><small>THE KERNEL GARDEN</small><h2>Choose your path</h2></div><span class="tiny-ornament">❧</span></div><div class="choices" role="group" aria-label="Preview profiles"><button type="button" class="choice" data-profile="Balanced" aria-pressed="false"><span class="sigil">Ⅰ</span><strong>Balanced</strong><span>Gentle harmony</span></button><button type="button" class="choice selected" data-profile="Native" aria-pressed="true"><span class="sigil">Ⅱ</span><strong>Native</strong><span>Original roots</span></button><button type="button" class="choice" data-profile="Battery Saver" aria-pressed="false"><span class="sigil">Ⅲ</span><strong>Battery Saver</strong><span>Quiet endurance</span></button><button type="button" class="choice" data-profile="Experimental" aria-pressed="false"><span class="sigil">Ⅳ</span><strong>Experimental</strong><span>Beyond the grove</span></button></div><div class="notice" role="status" id="preview-status">Native selected. No changes applied.</div>
+<div class="profile-details" id="profile-details">
+  <div class="profile-details-heading">
+    <small>PROFILE DETAILS</small>
+    <strong id="profile-details-title">Native</strong>
+  </div>
+
+  <p id="profile-details-description">
+    Hearthroot Kernel's original configuration.
+  </p>
+
+  <div class="profile-details-specs" id="profile-details-specs">
+    <div>
+      <small>CPU GOVERNOR</small>
+      <strong id="profile-details-cpu">sugov_ext</strong>
+    </div>
+    <div>
+      <small>I/O SCHEDULER</small>
+      <strong id="profile-details-io">none</strong>
+    </div>
+  </div>
+
+  <p class="profile-details-note" id="profile-details-note">
+    CPU/GPU frequency limits and thermal settings remain unchanged.
+  </p>
+</div>
+<div class="profile-controls"><div class="profile-current"><small>ACTIVE KERNEL CONFIGURATION</small><strong id="profile-current-state">Not checked yet</strong><span id="profile-current-detail">Waiting for BakaSU</span></div><div class="profile-buttons"><button type="button" id="profile-refresh">Refresh status</button><button type="button" id="profile-apply" disabled>Apply profile</button></div></div></section>
 <section class="glass seasonal-settings" aria-label="Seasonal themes">
   <div class="seasonal-heading">
     <div>

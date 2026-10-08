@@ -1540,3 +1540,129 @@ h3,
 }
 
 /* Hearthroot Four Profiles END */
+
+/* Hearthroot Profile Controls START */
+.profile-controls {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.profile-current {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 14px;
+  background: rgba(12, 22, 24, .10);
+}
+
+.profile-current small {
+  font-size: 10px;
+  letter-spacing: .12em;
+  opacity: .75;
+}
+
+.profile-current strong {
+  font-size: 15px;
+}
+
+.profile-current > span {
+  font-size: 12px;
+  opacity: .85;
+  overflow-wrap: anywhere;
+}
+
+.profile-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.profile-buttons button {
+  min-width: 0;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  background: rgba(255, 255, 255, .10);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.profile-buttons button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+/* Hearthroot Profile Controls END */
+
+/* Hearthroot Profile Details START */
+
+.profile-details {
+  display: grid;
+  gap: 12px;
+  padding: 15px;
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 15px;
+  background: rgba(20, 32, 35, .12);
+}
+
+.profile-details-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.profile-details-heading small,
+.profile-details-specs small {
+  font-size: 10px;
+  letter-spacing: .11em;
+  opacity: .75;
+}
+
+.profile-details-heading strong {
+  font-size: 17px;
+}
+
+#profile-details-description {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  opacity: .9;
+}
+
+.profile-details-specs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.profile-details-specs[hidden] {
+  display: none;
+}
+
+.profile-details-specs > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .07);
+}
+
+.profile-details-specs strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.profile-details-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: .7;
+}
+
+/* Hearthroot Profile Details END */
