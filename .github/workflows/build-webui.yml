@@ -1,0 +1,73 @@
+name: Build Hearthroot Control
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Package WebUI Module
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate module
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -f module.prop
+          test -f webroot/index.html
+          test -f webroot/css/style.css
+          test -f webroot/js/app.js
+
+          grep -q '^id=hearthroot.control$' module.prop
+
+          echo "Module structure validated."
+
+      - name: Read module version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION=$(sed -n 's/^version=//p' module.prop | head -n 1)
+
+          if [[ ! "$VERSION" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid module version"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build flashable ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist
+
+          ZIP_NAME="Hearthroot-Control-${{ steps.version.outputs.version }}.zip"
+
+          zip -r "dist/$ZIP_NAME" \
+            module.prop \
+            webroot/
+
+          unzip -t "dist/$ZIP_NAME"
+
+          echo "Package created: $ZIP_NAME"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hearthroot-Control-${{ steps.version.outputs.version }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30
