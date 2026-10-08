@@ -1327,3 +1327,189 @@ h3,
 :root[data-season="christmas"] .diag-card {
   background-color: rgba(13, 43, 34, .60) !important;
 }
+
+/* ==========================================
+   Hearthroot Seasonal Expansion v0.5.3
+   ========================================== */
+
+:root[data-season="new-year"] .scene {
+  background-image: url("../assets/seasons/new-year.webp");
+}
+
+:root[data-season="valentine"] .scene {
+  background-image: url("../assets/seasons/valentine.webp");
+}
+
+:root[data-season="easter"] .scene {
+  background-image: url("../assets/seasons/easter.webp");
+}
+
+:root[data-season="summer"] .scene {
+  background-image: url("../assets/seasons/summer.webp");
+}
+
+:root[data-season="tanabata"] .scene {
+  background-image: url("../assets/seasons/tanabata.webp");
+}
+
+:root[data-season="autumn"] .scene {
+  background-image: url("../assets/seasons/autumn.webp");
+}
+
+/* Shared seasonal glass settings */
+
+:root[data-season="new-year"] .glass {
+  background: rgba(24, 28, 49, .50) !important;
+  border-color: rgba(232, 190, 117, .38);
+}
+
+:root[data-season="valentine"] .glass {
+  background: rgba(71, 29, 48, .50) !important;
+  border-color: rgba(238, 168, 185, .38);
+}
+
+:root[data-season="easter"] .glass {
+  background: rgba(42, 65, 53, .47) !important;
+  border-color: rgba(221, 193, 226, .38);
+}
+
+:root[data-season="summer"] .glass {
+  background: rgba(15, 67, 71, .48) !important;
+  border-color: rgba(242, 198, 123, .38);
+}
+
+:root[data-season="tanabata"] .glass {
+  background: rgba(26, 28, 72, .52) !important;
+  border-color: rgba(177, 177, 239, .40);
+}
+
+:root[data-season="autumn"] .glass {
+  background: rgba(72, 39, 26, .51) !important;
+  border-color: rgba(234, 163, 96, .38);
+}
+
+/* Keep text above the decorative layers */
+
+:root[data-season="new-year"] .glass > *,
+:root[data-season="valentine"] .glass > *,
+:root[data-season="easter"] .glass > *,
+:root[data-season="summer"] .glass > *,
+:root[data-season="tanabata"] .glass > *,
+:root[data-season="autumn"] .glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Prevent the original botanical pattern from
+   appearing over the new seasonal palettes. */
+
+:root[data-season="new-year"] .glass::before,
+:root[data-season="valentine"] .glass::before,
+:root[data-season="easter"] .glass::before,
+:root[data-season="summer"] .glass::before,
+:root[data-season="tanabata"] .glass::before,
+:root[data-season="autumn"] .glass::before {
+  background-image: none !important;
+}
+
+/* Allow the Experimental title to wrap naturally. */
+
+.profile-card,
+.profile-card * {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/* ==========================================
+   Hearthroot Seasonal Ornaments v0.5.3
+   ========================================== */
+
+:root[data-season="new-year"] .glass::before {
+  background-image: url("../assets/seasons/new-year-pattern.svg") !important;
+}
+
+:root[data-season="valentine"] .glass::before {
+  background-image: url("../assets/seasons/valentine-pattern.svg") !important;
+}
+
+:root[data-season="easter"] .glass::before {
+  background-image: url("../assets/seasons/easter-pattern.svg") !important;
+}
+
+:root[data-season="summer"] .glass::before {
+  background-image: url("../assets/seasons/summer-pattern.svg") !important;
+}
+
+:root[data-season="tanabata"] .glass::before {
+  background-image: url("../assets/seasons/tanabata-pattern.svg") !important;
+}
+
+:root[data-season="autumn"] .glass::before {
+  background-image: url("../assets/seasons/autumn-pattern.svg") !important;
+}
+
+/* Shared ornamental presentation */
+
+:root[data-season="new-year"] .glass::before,
+:root[data-season="valentine"] .glass::before,
+:root[data-season="easter"] .glass::before,
+:root[data-season="summer"] .glass::before,
+:root[data-season="tanabata"] .glass::before,
+:root[data-season="autumn"] .glass::before {
+  background-size: 280px 280px;
+  background-repeat: repeat;
+  background-position: center top;
+  opacity: .23 !important;
+}
+
+/* Hearthroot PNG Seasonal Ornaments START */
+/* Transparent engraved patterns for seasonal glass */
+
+:root[data-season="new-year"] .glass::before {
+  background-image: url("../assets/seasons/new-year-ornament.png") !important;
+  background-repeat: repeat;
+  background-size: 280px 280px;
+  background-position: center top;
+  opacity: .22 !important;
+}
+
+:root[data-season="valentine"] .glass::before {
+  background-image: url("../assets/seasons/valentine-ornament.png") !important;
+  background-repeat: repeat;
+  background-size: 280px 280px;
+  background-position: center top;
+  opacity: .22 !important;
+}
+
+:root[data-season="easter"] .glass::before {
+  background-image: url("../assets/seasons/easter-ornament.png") !important;
+  background-repeat: repeat;
+  background-size: 280px 280px;
+  background-position: center top;
+  opacity: .22 !important;
+}
+
+:root[data-season="summer"] .glass::before {
+  background-image: url("../assets/seasons/summer-ornament.png") !important;
+  background-repeat: repeat;
+  background-size: 280px 280px;
+  background-position: center top;
+  opacity: .22 !important;
+}
+
+:root[data-season="tanabata"] .glass::before {
+  background-image: url("../assets/seasons/tanabata-ornament.png") !important;
+  background-repeat: repeat;
+  background-size: 280px 280px;
+  background-position: center top;
+  opacity: .22 !important;
+}
+
+:root[data-season="autumn"] .glass::before {
+  background-image: url("../assets/seasons/autumn-ornament.png") !important;
+  background-repeat: repeat;
+  background-size: 280px 280px;
+  background-position: center top;
+  opacity: .22 !important;
+}
+/* Hearthroot PNG Seasonal Ornaments END */
