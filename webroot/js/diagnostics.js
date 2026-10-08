@@ -52,8 +52,7 @@ echo '=== END ==='
     ["CPU", "CPU Governors", "cpu"],
     ["IO", "I/O Schedulers", "drive"],
     ["MEMORY", "Memory", "memory"],
-    ["ZRAM", "ZRAM", "memory"],
-    ["ROOT", "Root Access", "shield"]
+    ["ZRAM", "ZRAM", "memory"]
   ];
 
   function escapeHTML(value) {
@@ -84,6 +83,7 @@ echo '=== END ==='
     return data;
   }
 
+
   function formatSection(name, lines) {
     const content = lines.filter(line => line.trim());
 
@@ -91,106 +91,158 @@ echo '=== END ==='
       return '<span class="diag-muted">Unavailable</span>';
     }
 
+    const safe = escapeHTML;
+
     if (name === "KERNEL") {
-      return `
-        <strong>${escapeHTML(content[0])}</strong>
-        <span class="diag-muted">${escapeHTML(content[1] || "")}</span>
-      `;
+      return `<strong class="diag-value">${safe(content[0])}</strong>`;
     }
 
     if (name === "DEVICE") {
       return `
-        <strong>${escapeHTML(content[1] || content[0])}</strong>
-        <span>${escapeHTML(content[0] || "")}</span>
-        <span class="diag-muted">
-          Android ${escapeHTML(content[2] || "?")}
-          · API ${escapeHTML(content[3] || "?")}
-        </span>
+        <strong class="diag-value">${safe(content[1] || content[0])}</strong>
+        <span class="diag-muted">${safe(content[0] || "")}</span>
+        <span class="diag-muted">Android ${safe(content[2] || "?")}</span>
       `;
     }
 
     if (name === "CPU") {
-      const policies = [];
-      let current = null;
+      const governors = new Set();
 
       for (const line of content) {
-        if (line.startsWith("POLICY:")) {
-          current = { name: line.split(":")[1].trim() };
-          policies.push(current);
-        } else if (current) {
-          const index = line.indexOf(":");
-          if (index > 0) {
-            current[line.slice(0, index).trim()] =
-              line.slice(index + 1).trim();
-          }
+        if (line.startsWith("scaling_available_governors:")) {
+          const values = line.split(":").slice(1).join(":").trim();
+          values.split(/\s+/).filter(Boolean).forEach(v => governors.add(v));
         }
       }
 
-      return policies.map(policy => `
-        <div class="diag-entry">
-          <strong>${escapeHTML(policy.name)}</strong>
-          <span>
-            Active:
-            <b>${escapeHTML(policy.scaling_governor || "?")}</b>
-          </span>
-          <span class="diag-muted">
-            Available:
-            ${escapeHTML(policy.scaling_available_governors || "?")}
-          </span>
-        </div>
-      `).join("");
+      return governors.size
+        ? `<div class="diag-tags">${[...governors].map(v =>
+            `<span class="diag-tag">${safe(v)}</span>`
+          ).join("")}</div>`
+        : '<span class="diag-muted">Unavailable</span>';
     }
 
     if (name === "IO") {
-      const devices = [];
-      let current = null;
+      const schedulers = new Set();
 
       for (const line of content) {
-        if (line.startsWith("DEVICE:")) {
-          current = { name: line.split(":")[1].trim(), lines: [] };
-          devices.push(current);
-        } else if (current) {
-          current.lines.push(line);
+        if (/^\s*\[?[a-z][a-z0-9_-]*(?:\]?\s+|$)/i.test(line)
+            && !line.includes(":")
+            && !/^\d+$/.test(line.trim())) {
+          line.replace(/[\[\]]/g, "")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean)
+            .forEach(v => schedulers.add(v));
         }
       }
 
-      return devices.map(device => {
-        const scheduler = device.lines.find(
-          line => line.includes("[")
-        ) || "";
-
-        const active = scheduler.match(/\[([^\]]+)\]/);
-
-        return `
-          <div class="diag-entry">
-            <strong>${escapeHTML(device.name)}</strong>
-            <span>
-              Active:
-              <b>${escapeHTML(active ? active[1] : "?")}</b>
-            </span>
-            <span class="diag-muted">
-              Available:
-              ${escapeHTML(scheduler.replace(/[\[\]]/g, ""))}
-            </span>
-          </div>
-        `;
-      }).join("");
+      return schedulers.size
+        ? `<div class="diag-tags">${[...schedulers].map(v =>
+            `<span class="diag-tag">${safe(v)}</span>`
+          ).join("")}</div>`
+        : '<span class="diag-muted">Unavailable</span>';
     }
 
-    if (name === "ROOT") {
+    if (name === "MEMORY") {
+      const find = key => {
+        const line = content.find(v => v.startsWith(key + ":"));
+        return line ? Number(line.match(/\d+/)?.[0]) : NaN;
+      };
+
+      const total = find("MemTotal");
+      const available = find("MemAvailable");
+      const gib = kb => (kb / 1048576).toFixed(2);
+
       return `
-        <strong>${content[0].includes("uid=0")
-          ? "Root access granted"
-          : "Root status unknown"}</strong>
+        <strong class="diag-value">
+          ${Number.isFinite(total) ? gib(total) + " GiB" : "Unavailable"}
+        </strong>
         <span class="diag-muted">
-          ${escapeHTML(content[0])}
+          ${Number.isFinite(available)
+            ? gib(available) + " GiB available"
+            : ""}
         </span>
       `;
     }
 
-    return content.map(line => `
-      <span>${escapeHTML(line)}</span>
-    `).join("");
+    if (name === "ZRAM") {
+      const algorithms = content.find(line => /\[[^\]]+\]/.test(line));
+      const active = algorithms?.match(/\[([^\]]+)\]/)?.[1];
+      const sizeLine = content.find(line => /^\d+$/.test(line.trim())
+        || line.startsWith("disksize:"));
+      const size = sizeLine ? Number(sizeLine.match(/\d+/)?.[0]) : NaN;
+
+      return `
+        <strong class="diag-value">
+          ${Number.isFinite(size) ? (size / 1073741824).toFixed(2) + " GiB" : "Unavailable"}
+        </strong>
+        <span class="diag-muted">
+          ${active ? "Compression: " + safe(active) : ""}
+        </span>
+      `;
+    }
+
+    if (name === "ROOT") {
+      const granted = content.some(line => /\buid=0\(root\)/.test(line));
+      return `<strong class="diag-value">
+        ${granted ? "Access granted" : "Not confirmed"}
+      </strong>`;
+    }
+
+    return '<span class="diag-muted">Unavailable</span>';
+  }
+
+
+  function activeCpuGovernor(lines) {
+    const values = lines
+      .filter(line => line.startsWith("scaling_governor:"))
+      .map(line => line.split(":").slice(1).join(":").trim())
+      .filter(Boolean);
+
+    const unique = [...new Set(values)];
+
+    if (!unique.length) return "Unavailable";
+    return unique.length === 1 ? unique[0] : "Mixed";
+  }
+
+  function activeIoScheduler(lines) {
+    const values = lines
+      .map(line => line.match(/\[([^\]]+)\]/)?.[1])
+      .filter(Boolean);
+
+    const unique = [...new Set(values)];
+
+    if (!unique.length) return "Unavailable";
+    return unique.length === 1 ? unique[0] : "Mixed";
+  }
+
+  function createSystemState() {
+    const section = document.createElement("section");
+    section.className = "glass system-state";
+
+    section.innerHTML = `
+      <div class="state-heading">
+        <small>THE LIVING ROOTS</small>
+        <h2>Current System State</h2>
+      </div>
+
+      <div class="state-grid">
+        <div class="state-item">
+          <small>CPU GOVERNOR</small>
+          <strong id="active-cpu-governor">Detecting...</strong>
+          <span>Current configuration</span>
+        </div>
+
+        <div class="state-item">
+          <small>I/O SCHEDULER</small>
+          <strong id="active-io-scheduler">Detecting...</strong>
+          <span>Current configuration</span>
+        </div>
+      </div>
+    `;
+
+    document.querySelector(".profiles")?.after(section);
   }
 
   function createPanel() {
@@ -245,6 +297,18 @@ echo '=== END ==='
 
     refresh.disabled = true;
     status.textContent = "Reading system information...";
+    output.textContent = "";
+
+    // Clear previous values before collecting fresh data.
+    document.querySelectorAll(".diag-card-body").forEach(card => {
+      card.textContent = "Reading...";
+    });
+
+    const activeCpu = document.getElementById("active-cpu-governor");
+    const activeIo = document.getElementById("active-io-scheduler");
+
+    if (activeCpu) activeCpu.textContent = "Reading...";
+    if (activeIo) activeIo.textContent = "Reading...";
 
     try {
       const result = await window.HearthrootBridge.execute(
@@ -255,6 +319,29 @@ echo '=== END ==='
       const parsed = parseSections(raw);
 
       output.textContent = raw;
+
+      if (activeCpu) {
+        activeCpu.textContent = activeCpuGovernor(parsed.CPU || []);
+      }
+
+      if (activeIo) {
+        activeIo.textContent = activeIoScheduler(parsed.IO || []);
+      }
+
+      // Update the main device panel using detected properties.
+      const deviceLines = (parsed.DEVICE || [])
+        .filter(line => line.trim());
+
+      const model = document.getElementById("device-model");
+      const codename = document.getElementById("device-codename");
+
+      if (model) {
+        model.textContent = deviceLines[1] || "Unknown device";
+      }
+
+      if (codename) {
+        codename.textContent = deviceLines[0] || "Unknown codename";
+      }
 
       for (const [key] of sections) {
         const target = document.getElementById(
@@ -274,14 +361,29 @@ echo '=== END ==='
         : "Diagnostics returned incomplete data.";
 
     } catch (error) {
-      status.textContent = "Diagnostics failed.";
-      output.textContent = error.message;
+      status.textContent = "Diagnostics unavailable.";
+      output.textContent = String(error?.message || error);
+
+      document.querySelectorAll(".diag-card-body").forEach(card => {
+        card.textContent = "Unavailable";
+      });
+
+      const cpu = document.getElementById("active-cpu-governor");
+      const io = document.getElementById("active-io-scheduler");
+      const model = document.getElementById("device-model");
+      const codename = document.getElementById("device-codename");
+
+      if (cpu) cpu.textContent = "Unavailable";
+      if (io) io.textContent = "Unavailable";
+      if (model) model.textContent = "Unavailable";
+      if (codename) codename.textContent = "Detection failed";
     } finally {
       refresh.disabled = false;
     }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    createSystemState();
     createPanel();
 
     document.getElementById("refresh-diagnostics")

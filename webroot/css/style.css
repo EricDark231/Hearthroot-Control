@@ -574,3 +574,578 @@ section:has(pre) pre {
     grid-template-columns: 1fr;
   }
 }
+
+/* Emerald Woodland: botanical refinement */
+
+:root {
+  --leaf-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23B8D9BB' stroke-width='1.15' stroke-linecap='round' opacity='.8'%3E%3Cpath d='M117 2C95 15 85 34 70 51S40 80 8 92'/%3E%3Cpath d='M94 20Q77 10 72 2M84 34Q104 33 113 20M69 52Q48 49 42 32M53 68Q72 72 82 61M31 82Q20 65 8 63'/%3E%3C/g%3E%3Cg fill='%239BC8A5' opacity='.48'%3E%3Cellipse cx='73' cy='8' rx='5' ry='11' transform='rotate(-38 73 8)'/%3E%3Cellipse cx='105' cy='25' rx='5' ry='11' transform='rotate(52 105 25)'/%3E%3Cellipse cx='43' cy='39' rx='5' ry='11' transform='rotate(-45 43 39)'/%3E%3Cellipse cx='77' cy='65' rx='5' ry='11' transform='rotate(52 77 65)'/%3E%3Cellipse cx='13' cy='68' rx='5' ry='11' transform='rotate(-35 13 68)'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.glass {
+  background:
+    linear-gradient(145deg,
+      rgba(19, 77, 56, .51),
+      rgba(8, 38, 31, .42));
+  border-color: rgba(171, 215, 177, .25);
+}
+
+.glass::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: auto;
+  bottom: auto;
+  width: 105px;
+  height: 105px;
+  background: var(--leaf-pattern) center / contain no-repeat;
+  transform: none;
+  opacity: .46;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass::after {
+  content: none;
+}
+
+.glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+.diag-card {
+  padding: 16px 14px;
+  min-height: 125px;
+}
+
+.diag-card-title {
+  margin-bottom: 14px;
+}
+
+.diag-card-title .diag-leaf {
+  display: none;
+}
+
+.diag-card h3 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  letter-spacing: -.02em;
+  color: #f1eadb;
+}
+
+.diag-card-body {
+  gap: 8px;
+}
+
+.diag-value {
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.diag-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.diag-tag {
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid rgba(164, 218, 174, .24);
+  border-radius: 8px;
+  background: rgba(9, 48, 35, .44);
+  color: #d7ecda;
+  font: 11px/1.35 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.diag-muted {
+  font-family: system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #c3d7c7;
+}
+
+.diag-raw::before,
+.diag-raw::after {
+  content: none;
+}
+
+/* Current System State */
+
+.system-state {
+  margin-top: 14px;
+  padding: 19px 17px;
+}
+
+.state-heading {
+  margin-bottom: 16px;
+}
+
+.state-heading small {
+  color: var(--sage);
+}
+
+.state-heading h2 {
+  margin: 6px 0 0;
+  font-size: clamp(23px, 6vw, 29px);
+  font-weight: 400;
+  letter-spacing: -.025em;
+}
+
+.state-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.state-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 15px 12px;
+
+  border: 1px solid rgba(166, 215, 174, .22);
+  border-radius: 14px;
+  background: rgba(8, 42, 31, .42);
+}
+
+.state-item small {
+  color: #b8d9be;
+  font-size: 9px;
+  letter-spacing: .1em;
+}
+
+.state-item strong {
+  color: #e8f3e7;
+  font: 600 17px/1.3 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.state-item span {
+  color: #bdd0c0;
+  font: 10px/1.4 system-ui, sans-serif;
+}
+
+@media (max-width: 350px) {
+  .state-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* v0.5: Diagnostic card refinement */
+
+.diag-grid {
+  align-items: stretch;
+  gap: 12px;
+}
+
+.diag-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 132px;
+  padding: 17px 14px;
+}
+
+.diag-card-title {
+  min-height: 25px;
+  margin-bottom: 12px;
+}
+
+.diag-card-body {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.diag-card h3 {
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.diag-tag {
+  border-radius: 7px;
+  padding: 5px 7px;
+  font-size: 10px;
+}
+
+.diag-card::before {
+  opacity: .28;
+}
+
+.diag-card:hover {
+  border-color: rgba(171, 215, 177, .38);
+}
+
+@media (max-width: 390px) {
+  .diag-grid {
+    gap: 9px;
+  }
+
+  .diag-card {
+    padding: 14px 11px;
+  }
+}
+
+
+/* v0.5: final typography refinement */
+
+:root {
+  --font-display: "Palatino Linotype", "Book Antiqua",
+                  "Iowan Old Style", Georgia, serif;
+  --font-interface: system-ui, -apple-system,
+                    "Segoe UI", Roboto, sans-serif;
+}
+
+h1,
+h2,
+h3,
+.section-heading h2,
+.state-heading h2,
+.diag-card h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+}
+
+.diag-header h2 {
+  font-family: var(--font-display);
+  font-size: clamp(25px, 6.5vw, 32px);
+  letter-spacing: -.025em;
+}
+
+.diag-card h3 {
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.diag-card-body,
+.diag-tag,
+.diag-muted,
+.state-item,
+.notice,
+.diag-refresh {
+  font-family: var(--font-interface);
+}
+
+.diag-value {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+.diag-tag {
+  line-height: 1.4;
+  padding: 5px 8px;
+}
+
+.diag-card,
+.state-item {
+  transition:
+    border-color .2s ease,
+    background-color .2s ease;
+}
+
+.diag-card:focus-within {
+  border-color: rgba(170, 224, 183, .55);
+}
+
+.diag-refresh:focus-visible,
+.diag-raw summary:focus-visible {
+  outline: 2px solid #b8dfbd;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diag-card,
+  .state-item {
+    transition: none;
+  }
+}
+
+/* v0.5 - Emerald Botanical Engraving */
+
+:root {
+  --botanical-texture: url("../assets/emerald-botanical.png");
+}
+
+/* Botanical engraving across all glass surfaces */
+.glass {
+  background-color: rgba(8, 43, 32, .78);
+
+  background-image:
+    linear-gradient(
+      145deg,
+      rgba(8, 39, 30, .48),
+      rgba(6, 31, 25, .62)
+    ),
+    var(--botanical-texture);
+
+  background-size:
+    100% 100%,
+    360px auto;
+
+  background-position:
+    center,
+    center top;
+
+  background-repeat:
+    no-repeat,
+    repeat;
+
+  border: 1px solid rgba(168, 212, 176, .34);
+
+  -webkit-backdrop-filter: blur(13px) saturate(1.1);
+  backdrop-filter: blur(13px) saturate(1.1);
+}
+
+/* Remove old corner ornaments */
+.glass::before,
+.glass::after {
+  content: none !important;
+}
+
+/* More subdued texture behind technical information */
+.diag-card {
+  background-image:
+    linear-gradient(
+      rgba(6, 35, 27, .69),
+      rgba(6, 35, 27, .76)
+    ),
+    var(--botanical-texture);
+}
+
+/* Distinctive but readable profile cards */
+.choice {
+  background: rgba(8, 40, 31, .55);
+  border-color: rgba(168, 212, 176, .28);
+}
+
+.choice.selected {
+  background: linear-gradient(
+    155deg,
+    rgba(30, 113, 79, .78),
+    rgba(10, 64, 45, .72)
+  );
+  border-color: rgba(177, 234, 188, .8);
+}
+
+/* Center diagnostic titles */
+.diag-card-title {
+  justify-content: center;
+}
+
+.diag-card h3 {
+  width: 100%;
+  text-align: center;
+}
+
+.diag-card-body,
+.diag-tags {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* Keep log readable */
+.diag-raw pre {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(3, 22, 17, .72);
+  text-align: left;
+}
+
+/* v0.5 - Diagnostic alignment refinement */
+
+/* Consistent card layout */
+.diag-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 155px;
+  padding: 16px 12px;
+}
+
+/* Center every diagnostic heading */
+.diag-card-title {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.diag-card-title h3,
+.diag-card h3 {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* Center diagnostic values vertically and horizontally */
+.diag-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 7px;
+  text-align: center;
+}
+
+/* Single values remain centered */
+.diag-card-body > strong,
+.diag-card-body > span {
+  display: block;
+  max-width: 100%;
+  text-align: center;
+}
+
+/* Multiple governors or schedulers */
+.diag-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 6px;
+}
+
+/* Consistent height across cards in the same row */
+.diag-grid {
+  align-items: stretch;
+}
+
+/* Long technical values */
+.diag-value {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+/* Keep the raw diagnostic log left-aligned */
+.diag-raw pre {
+  text-align: left;
+}
+
+/* v0.5 - Translucent Emerald Botanical Glass */
+
+/* Keep the glass itself transparent */
+.glass {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+
+  background: rgba(9, 53, 39, .32) !important;
+
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+/* Botanical texture as an independent translucent layer */
+.glass::before {
+  content: "" !important;
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  z-index: 0;
+
+  background-image: url("../assets/emerald-botanical.png");
+  background-size: 360px auto;
+  background-repeat: repeat;
+  background-position: center top;
+
+  opacity: .22;
+  transform: none;
+  pointer-events: none;
+}
+
+/* Preserve legibility above the texture */
+.glass > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Slightly stronger glass on diagnostic cards */
+.diag-card {
+  background: rgba(8, 49, 36, .42) !important;
+}
+
+/* Clearer technical data */
+.diag-card-body,
+.diag-card-title,
+.state-item {
+  text-shadow: 0 1px 5px rgba(0, 18, 12, .38);
+}
+
+/* No decorative layer on the technical log */
+.diag-raw::before {
+  opacity: .12;
+}
+
+/* v0.5 - CPU Governors compact layout */
+
+/* Arrange governor tags in rows instead of a vertical column */
+.diag-card:has(.diag-tags) .diag-tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Keep governor tags compact */
+.diag-tags > * {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
+}
+
+/* v0.5 - Vertical CPU and I/O layout */
+
+/* Both diagnostic sections use a single centered column */
+#diag-cpu .diag-tags,
+#diag-io .diag-tags {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  align-content: center;
+  width: 100%;
+  gap: 8px;
+}
+
+/* Keep every label centered and readable */
+#diag-cpu .diag-tag,
+#diag-io .diag-tag {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 100%;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  white-space: nowrap;
+  margin: 0;
+}
+
+/* Override the previous CPU grid layout */
+#diag-cpu .diag-tag:last-child:nth-child(odd) {
+  grid-column: auto;
+  justify-self: auto;
+}

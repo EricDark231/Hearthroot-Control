@@ -8,3 +8,4 @@
 # Editor files
 .vscode/
 .idea/
+*.bak
