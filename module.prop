@@ -1,6 +1,6 @@
 id=hearthroot.control
 name=Hearthroot Control
-version=v0.8.4-alpha
-versionCode=14
+version=v0.8.7-alpha
+versionCode=17
 author=EricDark231
-description=Moonlit Cottage visual preview for Hearthroot Kernel (rodin).
+description=Hearthroot Kernel CPU and I/O profiles with optional LSPosed Xiaomi Parts Companion.

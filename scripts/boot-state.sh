@@ -26,6 +26,7 @@ save_profile() {
     mode="$1"
     cpu="${2:-}"
     io="${3:-}"
+    xiaomi="${4:-none}"
 
     case "$mode" in
         native|balanced|battery|performance)
@@ -34,7 +35,11 @@ save_profile() {
         custom)
             valid_name "$cpu" || exit 2
             valid_name "$io" || exit 2
-            record="custom $cpu $io"
+            case "$xiaomi" in
+                none|normal|economy|boost) ;;
+                *) echo "Invalid Xiaomi Parts selection" >&2; exit 2 ;;
+            esac
+            record="custom $cpu $io $xiaomi"
             ;;
         *)
             echo "Unsupported profile" >&2
@@ -63,20 +68,21 @@ restore_profile() {
     [ -f "$ENABLED" ] || exit 0
     [ -r "$STATE" ] || exit 0
 
-    read -r mode cpu io < "$STATE" || exit 1
+    read -r mode cpu io xiaomi < "$STATE" || exit 1
 
     case "$mode" in
         native|balanced|battery|performance)
-            /system/bin/sh \
-                "$MODDIR/scripts/profiles.sh" "$mode"
+            /system/bin/sh "$MODDIR/scripts/apply-integrated.sh" "$mode"
             ;;
         custom)
             valid_name "$cpu" || exit 2
             valid_name "$io" || exit 2
-
-            /system/bin/sh \
-                "$MODDIR/scripts/profiles.sh" \
-                custom "$cpu" "$io"
+            case "${xiaomi:-none}" in
+                none|normal|economy|boost) ;;
+                *) echo "Invalid saved Xiaomi profile" >&2; exit 2 ;;
+            esac
+            /system/bin/sh "$MODDIR/scripts/apply-integrated.sh" \
+                custom "$cpu" "$io" "${xiaomi:-none}"
             ;;
         *)
             echo "Invalid saved profile" >&2
@@ -87,7 +93,7 @@ restore_profile() {
 
 case "${1:-}" in
     save)
-        save_profile "${2:-}" "${3:-}" "${4:-}"
+        save_profile "${2:-}" "${3:-}" "${4:-}" "${5:-}"
         ;;
 
     enable)

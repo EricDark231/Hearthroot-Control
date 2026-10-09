@@ -39,7 +39,9 @@ show_status() {
         [ -f "$policy/scaling_governor" ] || continue
         found=1
 
-        echo "${policy##*/}: $(cat "$policy/scaling_governor")"
+        governor="$(cat "$policy/scaling_governor" 2>/dev/null)" || continue
+        [ -n "$governor" ] || continue
+        echo "${policy##*/}: $governor"
     done
 
     [ "$found" -eq 1 ] || error "No CPU policies found"
@@ -63,8 +65,9 @@ check_compatibility() {
     for policy in "$CPU_BASE"/policy*; do
         [ -f "$policy/scaling_available_governors" ] || continue
 
+        available="$(cat "$policy/scaling_available_governors" 2>/dev/null)" || continue
+        [ -n "$available" ] || continue
         cpu_count=$((cpu_count + 1))
-        available="$(cat "$policy/scaling_available_governors")"
 
         for governor in sugov_ext schedutil; do
             case " $available " in
@@ -110,8 +113,8 @@ list_options() {
         file="$policy/scaling_available_governors"
         [ -f "$file" ] || continue
 
-        available="$(cat "$file")" ||
-            error "Cannot read CPU governors"
+        available="$(cat "$file" 2>/dev/null)" || continue
+        [ -n "$available" ] || continue
 
         if [ "$cpu_seen" -eq 0 ]; then
             cpu_common="$available"
@@ -236,6 +239,25 @@ rollback() {
         echo "WARNING: Some values could not be restored" >&2
 }
 
+# HEARTHROOT_OFFLINE_POLICY_FIX_V1
+# Returns success only when every related CPU is explicitly marked offline.
+# Unknown CPU state is NOT treated as offline.
+policy_is_offline() {
+    _hp_policy="$1"
+    _hp_related="$(cat "$_hp_policy/related_cpus" 2>/dev/null)" || return 1
+    [ -n "$_hp_related" ] || return 1
+    for _hp_cpu in $_hp_related; do
+        case "$_hp_cpu" in
+            ""|*[!0-9]*) return 1 ;;
+        esac
+        _hp_online="/sys/devices/system/cpu/cpu${_hp_cpu}/online"
+        [ -f "$_hp_online" ] || return 1
+        _hp_status="$(cat "$_hp_online" 2>/dev/null)" || return 1
+        [ "$_hp_status" = "0" ] || return 1
+    done
+    return 0
+}
+
 apply_profile() {
     target_cpu="$1"
     target_io="$2"
@@ -254,8 +276,20 @@ apply_profile() {
         [ -f "$governor_file" ] ||
             error "Governor availability missing on ${policy##*/}"
 
-        available="$(cat "$governor_file")" ||
+        available="$(cat "$governor_file" 2>/dev/null)" || {
+            if policy_is_offline "$policy"; then
+                echo "WARNING: Skipping offline CPU policy ${policy##*/}" >&2
+                continue
+            fi
             error "Cannot read governors on ${policy##*/}"
+        }
+        [ -n "$available" ] || {
+            if policy_is_offline "$policy"; then
+                echo "WARNING: Skipping offline CPU policy ${policy##*/}" >&2
+                continue
+            fi
+            error "Empty governor list on ${policy##*/}"
+        }
 
         case " $available " in
             *" $target_cpu "*) ;;
@@ -273,8 +307,20 @@ apply_profile() {
         path="$policy/scaling_governor"
         [ -f "$path" ] || continue
 
-        current="$(cat "$path")" ||
+        current="$(cat "$path" 2>/dev/null)" || {
+            if policy_is_offline "$policy"; then
+                echo "WARNING: Snapshot skipped for offline ${policy##*/}" >&2
+                continue
+            fi
             error "Cannot read $path"
+        }
+        [ -n "$current" ] || {
+            if policy_is_offline "$policy"; then
+                echo "WARNING: Snapshot skipped for offline ${policy##*/}" >&2
+                continue
+            fi
+            error "Empty governor on ${policy##*/}"
+        }
 
         cpu_snapshot="$cpu_snapshot $path:$current"
     done

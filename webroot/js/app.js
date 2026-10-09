@@ -24,6 +24,7 @@
     document.getElementById("experimental-cpu");
   const experimentalIo =
     document.getElementById("experimental-io");
+  const experimentalXiaomi = document.getElementById("experimental-xiaomi");
 
   let customReady = false;
   let customBusy = false;
@@ -87,6 +88,7 @@
     experimentalPanel.hidden = !isExperimental;
     experimentalCpu.disabled = busy || customBusy || !customReady;
     experimentalIo.disabled = busy || customBusy || !customReady;
+    experimentalXiaomi.disabled = busy || customBusy;
 
 
     const info = profileDescriptions[selected];
@@ -191,6 +193,17 @@
     );
   }
 
+
+  const INTEGRATED_SCRIPT =
+    "/data/adb/modules/hearthroot.control/scripts/apply-integrated.sh";
+  async function executeIntegrated(action) {
+    if (!window.HearthrootBridge?.execute) {
+      throw new Error("BakaSU bridge unavailable");
+    }
+    return window.HearthrootBridge.execute(
+      `/system/bin/sh ${INTEGRATED_SCRIPT} ${action}`, 45000
+    );
+  }
 
   async function loadCustomOptions() {
     if (customBusy) return;
@@ -327,12 +340,16 @@
           selected = restored;
 
           if (parts[0] === "custom" &&
-              parts.length === 3) {
+              parts.length >= 3) {
             savedCustomSelection = {
               cpu: parts[1],
               io: parts[2]
             };
 
+            if (parts.length >= 4 &&
+                ["none", "normal", "economy", "boost"].includes(parts[3])) {
+              experimentalXiaomi.value = parts[3];
+            }
             if (customReady) {
               if (customCpuOptions.includes(parts[1])) {
                 experimentalCpu.value = parts[1];
@@ -453,6 +470,7 @@
     let action = actions[selected];
     let requestedCpu = "";
     let requestedIo = "";
+    let requestedXiaomi = "none";
 
     if (selected === "Experimental") {
       if (!customReady || customBusy) return;
@@ -466,7 +484,12 @@
         return;
       }
 
-      action = `custom ${requestedCpu} ${requestedIo}`;
+      requestedXiaomi = experimentalXiaomi.value;
+      if (!["none", "normal", "economy", "boost"].includes(requestedXiaomi)) {
+        notice.textContent = "Invalid Xiaomi Parts selection.";
+        return;
+      }
+      action = `custom ${requestedCpu} ${requestedIo} ${requestedXiaomi}`;
     }
 
     if (!action) return;
@@ -476,9 +499,10 @@
     notice.textContent = `Applying ${requested}...`;
 
     let commandError = null;
-
+    let syncState = "";
     try {
-      await execute(action);
+      const result = await executeIntegrated(action);
+      syncState = result.stdout?.match(/^XIAOMI_SYNC=(.+)$/m)?.[1] || "UNCONFIRMED";
     } catch (error) {
       commandError = error;
     } finally {
@@ -518,8 +542,8 @@
     }
 
     notice.textContent = verified
-      ? `${requested} settings verified as active.`
-      : `Settings do not fully match ${requested}. Check diagnostics.`;
+      ? `${requested} settings verified as active. Xiaomi Parts: ${syncState}.`
+      : `Settings do not fully match ${requested}. Check diagnostics. Xiaomi Parts: ${syncState}.`;
   }
 
   for (const button of choices) {

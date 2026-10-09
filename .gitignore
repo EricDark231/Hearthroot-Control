@@ -9,3 +9,19 @@
 .vscode/
 .idea/
 *.bak
+
+# Hearthroot Companion Android build
+/companion-src/.gradle/
+/companion-src/.idea/
+/companion-src/**/build/
+/companion-src/local.properties
+/companion-src/**/*.apk
+/companion-src/**/*.aab
+/companion-src/**/*.jks
+/companion-src/**/*.keystore
+/companion-src/*.log
+
+# Companion local Gradle state
+/companion-src/.gradle/
+/companion-src/**/build/
+/companion-src/local.properties

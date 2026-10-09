@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'dev.hearthroot.companion'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'dev.hearthroot.companion'
+        minSdk 26
+        targetSdk 35
+        versionCode 11
+        versionName '0.3.7-alpha'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    // Esta dependencia NO debe incluirse dentro del APK.
+    compileOnly 'io.github.libxposed:api:101.0.1'
+}
