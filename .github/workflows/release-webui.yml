@@ -50,7 +50,9 @@ jobs:
           SIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
           echo "Using apksigner: $SIGNER"
           "$SIGNER" verify --print-certs "$APK"
-          ACTUAL="$("$SIGNER" verify --print-certs "$APK" | sed -nE 's/^[[:space:]]*Signer #1 certificate SHA-256 digest:[[:space:]]*([[:xdigit:]]{64})[[:space:]]*$/\1/p' | head -1)"
+          ACTUAL="$("$SIGNER" verify --print-certs "$APK" | sed -nE 's/^.*certificate SHA-256 digest:[[:space:]]*([[:xdigit:]]{64})[[:space:]]*$/\1/p' | head -1)"
+          echo "Checking restored keystore certificate"
+          keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey | grep 'SHA256:'
           normalize_cert() {
             printf '%s' "$1" | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]'
           }
