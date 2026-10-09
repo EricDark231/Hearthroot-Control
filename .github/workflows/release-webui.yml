@@ -49,7 +49,25 @@ jobs:
           APK='companion-src/app/build/outputs/apk/debug/app-debug.apk'
           SIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
           ACTUAL="$("$SIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)"
-          [[ "${ACTUAL,,}" == "${CERT_SHA256,,}" ]] || { echo 'Companion certificate mismatch: publication blocked'; exit 1; }
+          normalize_cert() {
+            printf '%s' "$1" | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]'
+          }
+          EXPECTED="$(normalize_cert "$CERT_SHA256")"
+          ACTUAL="$(normalize_cert "$ACTUAL")"
+          if [[ ! "$EXPECTED" =~ ^[0-9a-f]{64}$ ]]; then
+            echo 'Invalid expected certificate digest format'
+            exit 1
+          fi
+          if [[ ! "$ACTUAL" =~ ^[0-9a-f]{64}$ ]]; then
+            echo 'Could not extract APK signing certificate digest'
+            exit 1
+          fi
+          if [[ "$ACTUAL" != "$EXPECTED" ]]; then
+            echo "APK certificate: $ACTUAL"
+            echo 'Companion certificate mismatch: publication blocked'
+            exit 1
+          fi
+          echo 'Companion signing certificate verified successfully'
       - name: Package module
         run: bash tools/package-module.sh
       - name: Publish prerelease only on matching tag
