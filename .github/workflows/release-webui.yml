@@ -40,7 +40,14 @@ jobs:
           chmod 600 "$HOME/.android/debug.keystore"
       - name: Build Companion
         working-directory: companion-src
-        run: gradle --no-daemon :app:assembleDebug
+        env:
+          ANDROID_USER_HOME: ${{ github.workspace }}/.android-signing
+        run: |
+          set -euo pipefail
+          mkdir -p "$ANDROID_USER_HOME"
+          cp "$HOME/.android/debug.keystore" "$ANDROID_USER_HOME/debug.keystore"
+          chmod 600 "$ANDROID_USER_HOME/debug.keystore"
+          gradle --no-daemon :app:assembleDebug
       - name: Verify Companion signing certificate
         env:
           CERT_SHA256: ${{ secrets.HEARTHROOT_COMPANION_CERT_SHA256 }}
