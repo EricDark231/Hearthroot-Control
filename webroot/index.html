@@ -1,4 +1,78 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#172535"><title>Hearthroot Control</title><link rel="stylesheet" href="css/style.css"></head><body><div class="scene" aria-hidden="true"></div><div class="shade" aria-hidden="true"></div><main class="shell"><header class="mast"><div class="kicker">H E A R T H R O O T  ·  P R O J E C T</div><div class="topline"><span class="ornament">✦</span><span id="season-name">Moonlit Cottage</span></div><h1>Hearthroot<br><em>Control</em></h1><p class="tagline">A quiet place to tend your kernel.</p></header><div class="breathing-space" aria-hidden="true"></div><section class="glass status" aria-label="Device information"><div><small>DEVICE</small><strong id="device-model">Detecting...</strong><span id="device-codename">Waiting for device</span></div><div class="status-side"><small>INTERFACE</small><strong>Visual preview</strong><span>No kernel changes</span></div></section><section class="glass profiles"><div class="section-heading"><div><small>THE KERNEL GARDEN</small><h2>Choose your path</h2></div><span class="tiny-ornament">❧</span></div><div class="choices" role="group" aria-label="Preview profiles"><button type="button" class="choice" data-profile="Balanced" aria-pressed="false"><span class="sigil">Ⅰ</span><strong>Balanced</strong><span>Gentle harmony</span></button><button type="button" class="choice selected" data-profile="Native" aria-pressed="true"><span class="sigil">Ⅱ</span><strong>Native</strong><span>Original roots</span></button><button type="button" class="choice" data-profile="Battery Saver" aria-pressed="false"><span class="sigil">Ⅲ</span><strong>Battery Saver</strong><span>Quiet endurance</span></button><button type="button" class="choice" data-profile="Experimental" aria-pressed="false"><span class="sigil">Ⅳ</span><strong>Experimental</strong><span>Beyond the grove</span></button></div><div class="notice" role="status" id="preview-status">Native selected. No changes applied.</div>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#172535"><title>Hearthroot Control</title><link rel="stylesheet" href="css/style.css"></head><body><div class="scene" aria-hidden="true"></div><div class="shade" aria-hidden="true"></div><main class="shell"><header class="mast">
+<button
+  type="button"
+  id="hearth-settings-trigger"
+  class="hearth-settings-trigger"
+  aria-label="Open settings"
+  aria-controls="hearth-settings-panel"
+  aria-expanded="false"
+>
+  <svg
+    viewBox="0 0 24 24"
+    width="23"
+    height="23"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.9 1.9-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.5V20H9v-.11a1.65 1.65 0 0 0-1-1.5 1.65 1.65 0 0 0-1.82.33l-.06.06-1.9-1.9.06-.06A1.65 1.65 0 0 0 4.61 15a1.65 1.65 0 0 0-1.5-1H3v-3h.11a1.65 1.65 0 0 0 1.5-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06 1.9-1.9.06.06A1.65 1.65 0 0 0 8 6.61a1.65 1.65 0 0 0 1-1.5V5h6v.11a1.65 1.65 0 0 0 1 1.5 1.65 1.65 0 0 0 1.82-.33l.06-.06 1.9 1.9-.06.06A1.65 1.65 0 0 0 19.39 10a1.65 1.65 0 0 0 1.5 1H21v3h-.11a1.65 1.65 0 0 0-1.5 1Z"/>
+  </svg>
+</button>
+
+<div
+  id="hearth-settings-panel"
+  class="hearth-settings-panel glass"
+  role="region"
+  aria-label="Hearthroot settings"
+  hidden
+>
+  <div class="hearth-settings-heading">
+    <span>Settings</span>
+    <span aria-hidden="true">✦</span>
+  </div>
+
+  <div class="hearth-settings-appearance">
+    <label for="season-select">SEASONAL THEME</label>
+    <select id="season-select">
+  <option value="auto">Automatic · Calendar</option>
+  <option value="default">Moonlit Cottage</option>
+  <option value="halloween">Haunted Cottage · Halloween</option>
+  <option value="christmas">Winter Cottage · Christmas</option>
+  <option value="new-year">Midnight Cottage · New Year</option>
+  <option value="valentine">Rosewood Cottage · Valentine</option>
+  <option value="easter">Blooming Cottage · Easter</option>
+  <option value="summer">Sunlit Cottage · Summer</option>
+  <option value="tanabata">Starlit Cottage · Tanabata</option>
+  <option value="autumn">Harvest Cottage · Autumn</option>
+</select>
+  </div>
+
+  <div class="hearth-settings-divider"></div>
+
+  <div class="boot-controls">
+  <label class="boot-control-row" for="boot-toggle">
+    <span class="boot-control-description">
+      <strong>Apply on boot</strong>
+      <span>Restore the last applied profile after restarting Android.</span>
+    </span>
+    <input type="checkbox" id="boot-toggle" disabled>
+  </label>
+
+  <span id="boot-state" role="status">
+    Checking boot configuration...
+  </span>
+
+  <p class="boot-warning">
+    Automatic restoration may increase power consumption when using
+    Performance or advanced Experimental settings.
+  </p>
+</div>
+</div>
+<div class="kicker">H E A R T H R O O T  ·  P R O J E C T</div><div class="topline"><span class="ornament">✦</span><span id="season-name">Moonlit Cottage</span></div><h1>Hearthroot<br><em>Control</em></h1><p class="tagline">A quiet place to tend your kernel.</p></header><div class="breathing-space" aria-hidden="true"></div><section class="glass status" aria-label="Device information"><div><small>DEVICE</small><strong id="device-model">Detecting...</strong><span id="device-codename">Waiting for device</span></div><div class="status-side"><small>INTERFACE</small><strong>Visual preview</strong><span>No kernel changes</span></div></section><section class="glass profiles"><div class="section-heading"><div><small>THE KERNEL GARDEN</small><h2>Choose your path</h2></div><span class="tiny-ornament">❧</span></div><div class="choices" role="group" aria-label="Preview profiles"><button type="button" class="choice" data-profile="Balanced" aria-pressed="false"><span class="sigil">Ⅰ</span><strong>Balanced</strong><span>Gentle harmony</span></button><button type="button" class="choice selected" data-profile="Native" aria-pressed="true"><span class="sigil">Ⅱ</span><strong>Native</strong><span>Original roots</span></button><button type="button" class="choice" data-profile="Battery Saver" aria-pressed="false"><span class="sigil">Ⅲ</span><strong>Battery Saver</strong><span>Quiet endurance</span></button><button type="button" class="choice" data-profile="Performance" aria-pressed="false"><span class="sigil">Ⅳ</span><strong>Performance</strong><span>Full potential</span></button><button type="button" class="choice" data-profile="Experimental" aria-pressed="false"><span class="sigil">Ⅴ</span><strong>Experimental</strong><span>Beyond the grove</span></button></div><div class="notice" role="status" id="preview-status">Native selected. No changes applied.</div>
 <div class="profile-details" id="profile-details">
   <div class="profile-details-heading">
     <small>PROFILE DETAILS</small>
@@ -24,36 +98,35 @@
     CPU/GPU frequency limits and thermal settings remain unchanged.
   </p>
 </div>
+
+<div class="experimental-controls" id="experimental-controls" hidden>
+  <small>ADVANCED CONFIGURATION</small>
+  <p>Choose the CPU governor and I/O scheduler supported by your kernel.</p>
+
+  <label for="experimental-cpu">CPU GOVERNOR</label>
+  <select id="experimental-cpu" disabled>
+    <option value="">Loading...</option>
+  </select>
+
+  <label for="experimental-io">I/O SCHEDULER</label>
+  <select id="experimental-io" disabled>
+    <option value="">Loading...</option>
+  </select>
+
+  <p class="experimental-warning">
+    Advanced settings may affect performance, battery life and stability.
+    CPU/GPU frequency limits and thermal settings are not modified.
+  </p>
+</div>
+
+
 <div class="profile-controls"><div class="profile-current"><small>ACTIVE KERNEL CONFIGURATION</small><strong id="profile-current-state">Not checked yet</strong><span id="profile-current-detail">Waiting for BakaSU</span></div><div class="profile-buttons"><button type="button" id="profile-refresh">Refresh status</button><button type="button" id="profile-apply" disabled>Apply profile</button></div></div></section>
-<section class="glass seasonal-settings" aria-label="Seasonal themes">
-  <div class="seasonal-heading">
-    <div>
-      <small>SEASONAL THEMES</small>
-      <h2>Seasons of Hearthroot</h2>
-    </div>
-    <span aria-hidden="true">✦</span>
-  </div>
 
-  <p>Let the seasons change your cottage.</p>
-
-  <label for="season-select">Appearance</label>
-  <select id="season-select">
-  <option value="auto">Automatic · Calendar</option>
-  <option value="default">Moonlit Cottage</option>
-  <option value="halloween">Haunted Cottage · Halloween</option>
-  <option value="christmas">Winter Cottage · Christmas</option>
-  <option value="new-year">Midnight Cottage · New Year</option>
-  <option value="valentine">Rosewood Cottage · Valentine</option>
-  <option value="easter">Blooming Cottage · Easter</option>
-  <option value="summer">Sunlit Cottage · Summer</option>
-  <option value="tanabata">Starlit Cottage · Tanabata</option>
-  <option value="autumn">Harvest Cottage · Autumn</option>
-</select>
-</section>
 <footer><span>✧ &nbsp; Grown with care &nbsp; ✧</span><small>HEARTHROOT CONTROL · ALPHA PREVIEW</small></footer>
 </main>
 <script src="js/bridge.js"></script>
 <script src="js/diagnostics.js"></script>
 <script src="js/app.js"></script>
-<script src="js/seasonal.js"></script></body>
+<script src="js/seasonal.js"></script>
+<script src="js/settings.js"></script></body>
 </html>

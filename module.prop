@@ -1,6 +1,6 @@
 id=hearthroot.control
 name=Hearthroot Control
-version=v0.6.0-alpha-apply-test
-versionCode=6
+version=v0.8.4-alpha
+versionCode=14
 author=EricDark231
 description=Moonlit Cottage visual preview for Hearthroot Kernel (rodin).

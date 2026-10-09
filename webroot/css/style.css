@@ -1666,3 +1666,332 @@ h3,
 }
 
 /* Hearthroot Profile Details END */
+
+
+/* Hearthroot Five Profiles START */
+.profiles .choice[data-profile="Experimental"] {
+  grid-column: 1 / -1;
+  min-height: 112px;
+  width: 100%;
+}
+
+.profiles .choice[data-profile="Performance"] {
+  min-width: 0;
+}
+/* Hearthroot Five Profiles END */
+
+
+/* Hearthroot Experimental Controls START */
+.experimental-controls {
+  display: grid;
+  gap: 11px;
+  margin-top: 14px;
+  padding: 15px;
+  border: 1px solid rgba(255,255,255,.19);
+  border-radius: 15px;
+  background: rgba(17,28,32,.13);
+}
+
+.experimental-controls[hidden] {
+  display: none;
+}
+
+.experimental-controls > small,
+.experimental-controls label {
+  font-size: 10px;
+  letter-spacing: .12em;
+  opacity: .85;
+}
+
+.experimental-controls p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.experimental-controls select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 11px;
+  background: #233b3b;
+  color: #f4f3e9;
+  font: inherit;
+  font-size: 13px;
+}
+
+.experimental-controls select:disabled {
+  opacity: .5;
+}
+
+.experimental-warning {
+  opacity: .75;
+}
+/* Hearthroot Experimental Controls END */
+
+
+/* Hearthroot Boot Persistence START */
+.boot-controls {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 15px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 15px;
+  background: rgba(20,32,35,.12);
+}
+
+.boot-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.boot-control-description {
+  display: grid;
+  gap: 5px;
+}
+
+.boot-control-description strong {
+  font-size: 14px;
+}
+
+.boot-control-description > span {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: .8;
+}
+
+#boot-toggle {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  accent-color: #93bda4;
+  cursor: pointer;
+}
+
+#boot-toggle:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+#boot-state {
+  font-size: 11px;
+  opacity: .85;
+  overflow-wrap: anywhere;
+}
+
+.boot-warning {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: .7;
+}
+/* Hearthroot Boot Persistence END */
+
+
+/* Hearthroot Active Diagnostics START */
+
+.diag-card .diag-tag.is-active {
+  border: 1px solid rgba(125, 217, 161, .70);
+  background: rgba(77, 175, 113, .20);
+  box-shadow: 0 0 0 1px rgba(109, 204, 145, .12) inset;
+}
+
+.diag-active-label {
+  display: inline-block;
+  margin-left: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #b6efc8;
+}
+
+/* Hearthroot Active Diagnostics END */
+
+/* Hearthroot Floating Settings START */
+
+.mast {
+  position: relative;
+  overflow: visible;
+}
+
+.mast .kicker {
+  padding-right: 58px;
+}
+
+.hearth-settings-trigger {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 61;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 46px;
+  height: 46px;
+  padding: 0;
+
+  border-radius: 15px;
+  border: 1px solid rgba(225, 242, 226, .35);
+
+  background: rgba(38, 52, 48, .36);
+  color: #d9efdf;
+
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .17),
+    0 7px 24px rgba(0, 0, 0, .14);
+
+  cursor: pointer;
+
+  transition:
+    background .25s ease,
+    border-color .25s ease,
+    transform .25s ease;
+}
+
+.hearth-settings-trigger svg {
+  transition: transform .3s ease;
+}
+
+.hearth-settings-trigger[aria-expanded="true"] svg {
+  transform: rotate(45deg);
+}
+
+.hearth-settings-trigger:active {
+  transform: scale(.95);
+}
+
+.hearth-settings-trigger:focus-visible {
+  outline: 2px solid #b3e5c8;
+  outline-offset: 3px;
+}
+
+.hearth-settings-panel.glass {
+  position: absolute;
+  top: 59px;
+  right: 0;
+  z-index: 60;
+
+  width: min(328px, calc(100vw - 34px));
+  max-height: min(75vh, 560px);
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  box-sizing: border-box;
+  padding: 19px;
+
+  border-radius: 20px;
+
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  backdrop-filter: blur(24px) saturate(145%);
+
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, .26),
+    inset 0 1px 0 rgba(255, 255, 255, .15);
+}
+
+.hearth-settings-panel[hidden] {
+  display: none !important;
+}
+
+.hearth-settings-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hearth-settings-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  margin-bottom: 18px;
+
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.hearth-settings-appearance {
+  display: grid;
+  gap: 10px;
+}
+
+.hearth-settings-appearance label {
+  font-size: 11px;
+  letter-spacing: .12em;
+  opacity: .85;
+}
+
+.hearth-settings-panel #season-select {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+
+  box-sizing: border-box;
+  padding: 10px 12px;
+
+  border: 1px solid rgba(255,255,255,.26);
+  border-radius: 12px;
+
+  background: rgba(24, 38, 37, .75);
+  color: #f7f2e6;
+
+  font: inherit;
+  font-size: 13px;
+}
+
+.hearth-settings-panel #season-select option {
+  background: #273638;
+  color: #f7f2e6;
+}
+
+.hearth-settings-divider {
+  height: 1px;
+  margin: 18px 0;
+
+  background: rgba(255, 255, 255, .18);
+}
+
+.hearth-settings-panel .boot-controls {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Seasonal glass tint */
+:root[data-season="halloween"] .hearth-settings-trigger {
+  background: rgba(92, 57, 62, .40);
+  border-color: rgba(250, 190, 129, .35);
+}
+
+:root[data-season="christmas"] .hearth-settings-trigger {
+  background: rgba(37, 77, 59, .42);
+}
+
+:root[data-season="valentine"] .hearth-settings-trigger {
+  background: rgba(109, 55, 82, .40);
+}
+
+:root[data-season="tanabata"] .hearth-settings-trigger,
+:root[data-season="new-year"] .hearth-settings-trigger {
+  background: rgba(44, 56, 100, .43);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hearth-settings-trigger,
+  .hearth-settings-trigger svg {
+    transition: none;
+  }
+}
+
+/* Hearthroot Floating Settings END */

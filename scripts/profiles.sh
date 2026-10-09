@@ -100,6 +100,114 @@ check_compatibility() {
     echo "Profile compatibility: OK"
 }
 
+
+# Return governors and schedulers common to every managed interface.
+list_options() {
+    cpu_common=""
+    cpu_seen=0
+
+    for policy in "$CPU_BASE"/policy*; do
+        file="$policy/scaling_available_governors"
+        [ -f "$file" ] || continue
+
+        available="$(cat "$file")" ||
+            error "Cannot read CPU governors"
+
+        if [ "$cpu_seen" -eq 0 ]; then
+            cpu_common="$available"
+        else
+            common=""
+            for item in $cpu_common; do
+                case " $available " in
+                    *" $item "*) common="$common $item" ;;
+                esac
+            done
+            cpu_common="${common# }"
+        fi
+
+        cpu_seen=$((cpu_seen + 1))
+    done
+
+    io_common=""
+    io_seen=0
+
+    for disk in "$IO_BASE"/sd*; do
+        file="$disk/queue/scheduler"
+        supports_io_profiles "$file" || continue
+
+        available="$(tr '[]' '  ' < "$file")" ||
+            error "Cannot read I/O schedulers"
+
+        if [ "$io_seen" -eq 0 ]; then
+            io_common="$available"
+        else
+            common=""
+            for item in $io_common; do
+                case " $available " in
+                    *" $item "*) common="$common $item" ;;
+                esac
+            done
+            io_common="${common# }"
+        fi
+
+        io_seen=$((io_seen + 1))
+    done
+
+    [ "$cpu_seen" -gt 0 ] ||
+        error "No CPU policies found"
+
+    [ "$io_seen" -gt 0 ] ||
+        error "No compatible I/O devices found"
+
+    [ -n "$cpu_common" ] ||
+        error "No common CPU governors"
+
+    [ -n "$io_common" ] ||
+        error "No common I/O schedulers"
+
+    printf 'CPU=%s\n' "$cpu_common"
+    printf 'IO=%s\n' "$io_common"
+}
+
+apply_custom() {
+    cpu="${1:-}"
+    io="${2:-}"
+
+    # Restrict arguments to safe scheduler/governor names.
+    case "$cpu" in
+        ""|*[!a-zA-Z0-9_-]*)
+            error "Invalid CPU governor name"
+            ;;
+    esac
+
+    case "$io" in
+        ""|*[!a-zA-Z0-9_-]*)
+            error "Invalid I/O scheduler name"
+            ;;
+    esac
+
+    # Validate the pair against the kernel's current capabilities.
+    available_options="$(list_options)" || exit 1
+
+    available_cpu="$(printf '%s\n' "$available_options" |
+        sed -n 's/^CPU=//p')"
+
+    available_io="$(printf '%s\n' "$available_options" |
+        sed -n 's/^IO=//p')"
+
+    case " $available_cpu " in
+        *" $cpu "*) ;;
+        *) error "Unsupported CPU governor: $cpu" ;;
+    esac
+
+    case " $available_io " in
+        *" $io "*) ;;
+        *) error "Unsupported I/O scheduler: $io" ;;
+    esac
+
+    apply_profile "$cpu" "$io"
+}
+
 rollback() {
     echo "Restoring previous settings..." >&2
     restore_failed=0
@@ -138,6 +246,25 @@ apply_profile() {
     # Reject unsupported configurations before writing.
     check_compatibility >/dev/null || exit 1
 
+    # Validate every CPU policy before modifying any settings.
+    for policy in "$CPU_BASE"/policy*; do
+        [ -f "$policy/scaling_governor" ] || continue
+
+        governor_file="$policy/scaling_available_governors"
+        [ -f "$governor_file" ] ||
+            error "Governor availability missing on ${policy##*/}"
+
+        available="$(cat "$governor_file")" ||
+            error "Cannot read governors on ${policy##*/}"
+
+        case " $available " in
+            *" $target_cpu "*) ;;
+            *)
+                error "${policy##*/} does not support $target_cpu"
+                ;;
+        esac
+    done
+
     cpu_snapshot=""
     io_snapshot=""
 
@@ -157,6 +284,16 @@ apply_profile() {
         path="$disk/queue/scheduler"
 
         supports_io_profiles "$path" || continue
+
+        available_io="$(tr '[]' '  ' < "$path")" ||
+            error "Cannot read schedulers for ${disk##*/}"
+
+        case " $available_io " in
+            *" $target_io "*) ;;
+            *)
+                error "${disk##*/} does not support $target_io"
+                ;;
+        esac
 
         current="$(current_scheduler "$path")"
         [ -n "$current" ] ||
@@ -202,6 +339,12 @@ apply_profile() {
 }
 
 case "${1:-}" in
+    options)
+        list_options
+        ;;
+    custom)
+        apply_custom "${2:-}" "${3:-}"
+        ;;
     status)
         show_status
         ;;
@@ -211,11 +354,17 @@ case "${1:-}" in
     balanced)
         apply_profile "schedutil" "kyber"
         ;;
+    battery)
+        apply_profile "conservative" "none"
+        ;;
+    performance)
+        apply_profile "performance" "mq-deadline"
+        ;;
     native)
         apply_profile "sugov_ext" "none"
         ;;
     *)
-        echo "Usage: profiles.sh {status|check|balanced|native}" >&2
+        echo "Usage: profiles.sh {status|check|balanced|native|battery|performance}" >&2
         exit 2
         ;;
 esac

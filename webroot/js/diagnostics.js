@@ -107,25 +107,53 @@ echo '=== END ==='
 
     if (name === "CPU") {
       const governors = new Set();
+      const active = new Set();
 
       for (const line of content) {
         if (line.startsWith("scaling_available_governors:")) {
           const values = line.split(":").slice(1).join(":").trim();
-          values.split(/\s+/).filter(Boolean).forEach(v => governors.add(v));
+          values.split(/\s+/).filter(Boolean)
+            .forEach(value => governors.add(value));
+        }
+
+        if (line.startsWith("scaling_governor:")) {
+          const value = line.split(":").slice(1).join(":").trim();
+          if (value) {
+            active.add(value);
+            governors.add(value);
+          }
         }
       }
 
-      return governors.size
-        ? `<div class="diag-tags">${[...governors].map(v =>
-            `<span class="diag-tag">${safe(v)}</span>`
-          ).join("")}</div>`
-        : '<span class="diag-muted">Unavailable</span>';
+      if (!governors.size) {
+        return '<span class="diag-muted">Unavailable</span>';
+      }
+
+      return `<div class="diag-tags">${[...governors].map(value => {
+        const enabled = active.has(value);
+        const label = enabled
+          ? `<span class="diag-active-label">${
+              active.size > 1 ? "In use" : "Active"
+            }</span>`
+          : "";
+
+        return `<span class="diag-tag${enabled ? " is-active" : ""}">` +
+          `${safe(value)}${label}</span>`;
+      }).join("")}</div>`;
     }
 
     if (name === "IO") {
       const schedulers = new Set();
+      const active = new Set();
 
       for (const line of content) {
+        const current = line.match(/\[([^\]]+)\]/)?.[1];
+
+        if (current) {
+          active.add(current);
+          schedulers.add(current);
+        }
+
         if (/^\s*\[?[a-z][a-z0-9_-]*(?:\]?\s+|$)/i.test(line)
             && !line.includes(":")
             && !/^\d+$/.test(line.trim())) {
@@ -133,15 +161,25 @@ echo '=== END ==='
             .trim()
             .split(/\s+/)
             .filter(Boolean)
-            .forEach(v => schedulers.add(v));
+            .forEach(value => schedulers.add(value));
         }
       }
 
-      return schedulers.size
-        ? `<div class="diag-tags">${[...schedulers].map(v =>
-            `<span class="diag-tag">${safe(v)}</span>`
-          ).join("")}</div>`
-        : '<span class="diag-muted">Unavailable</span>';
+      if (!schedulers.size) {
+        return '<span class="diag-muted">Unavailable</span>';
+      }
+
+      return `<div class="diag-tags">${[...schedulers].map(value => {
+        const enabled = active.has(value);
+        const label = enabled
+          ? `<span class="diag-active-label">${
+              active.size > 1 ? "In use" : "Active"
+            }</span>`
+          : "";
+
+        return `<span class="diag-tag${enabled ? " is-active" : ""}">` +
+          `${safe(value)}${label}</span>`;
+      }).join("")}</div>`;
     }
 
     if (name === "MEMORY") {
@@ -215,34 +253,6 @@ echo '=== END ==='
 
     if (!unique.length) return "Unavailable";
     return unique.length === 1 ? unique[0] : "Mixed";
-  }
-
-  function createSystemState() {
-    const section = document.createElement("section");
-    section.className = "glass system-state";
-
-    section.innerHTML = `
-      <div class="state-heading">
-        <small>THE LIVING ROOTS</small>
-        <h2>Current System State</h2>
-      </div>
-
-      <div class="state-grid">
-        <div class="state-item">
-          <small>CPU GOVERNOR</small>
-          <strong id="active-cpu-governor">Detecting...</strong>
-          <span>Current configuration</span>
-        </div>
-
-        <div class="state-item">
-          <small>I/O SCHEDULER</small>
-          <strong id="active-io-scheduler">Detecting...</strong>
-          <span>Current configuration</span>
-        </div>
-      </div>
-    `;
-
-    document.querySelector(".profiles")?.after(section);
   }
 
   function createPanel() {
@@ -383,7 +393,6 @@ echo '=== END ==='
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    createSystemState();
     createPanel();
 
     document.getElementById("refresh-diagnostics")
