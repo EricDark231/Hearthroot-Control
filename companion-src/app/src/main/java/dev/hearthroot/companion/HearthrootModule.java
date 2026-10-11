@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.ResultReceiver;
 import android.util.Log;
+import android.os.SystemClock;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -33,6 +34,8 @@ public final class HearthrootModule extends XposedModule {
     private static final String EXTRA_REPLY = "reply";
     private static final String EXTRA_COMMAND = "command";
     private static final String EXTRA_PROFILE = "profile";
+    private static final String EXTRA_SENT_AT = "sent_at_elapsed";
+    private static final long SET_MAX_AGE_MS = 5000L;
 
     private ClassLoader targetLoader;
     private BroadcastReceiver bridgeReceiver;
@@ -103,9 +106,9 @@ public final class HearthrootModule extends XposedModule {
                     if (TARGET.equals(context.getPackageName())) {
                         try {
                             ensureBridge(context);
-                        } catch (Throwable t) {
+                         } catch (Throwable t) {
                             report("BRIDGE FAILED: " + t);
-                        }
+                         }
                     }
                     return result;
                 });
@@ -121,6 +124,7 @@ public final class HearthrootModule extends XposedModule {
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context ignored, Intent intent) {
+                report("BRIDGE RX: broadcast received");
                 // Defense in depth: validate the real Android sender UID, not extras.
                 int expectedUid;
                 try {
@@ -157,14 +161,25 @@ public final class HearthrootModule extends XposedModule {
                 try {
                     String command = intent.getStringExtra(EXTRA_COMMAND);
                     if ("QUERY".equals(command)) {
+                        report("BRIDGE QUERY: processing");
                         send(reply, 0, getSelectedProfile(context), "Perfil declarado por Xiaomi Parts");
                     } else if ("SET".equals(command)) {
+                        report("BRIDGE SET: processing");
+                        long sentAt = intent.getLongExtra(EXTRA_SENT_AT, -1L);
+                        long now = SystemClock.elapsedRealtime();
+
+                        if (sentAt < 0 || sentAt > now
+                                || now - sentAt > SET_MAX_AGE_MS) {
+                            report("BRIDGE SET REJECTED: expired or invalid request");
+                            send(reply, 1, null, "Solicitud SET caducada");
+                            return;
+                        }
                         String requested = intent.getStringExtra(EXTRA_PROFILE);
                         // Allow only validated non-EXTREME modes. Never modify thermal controls.
                         if (!"NORMAL".equals(requested)
                                 && !"ECONOMY".equals(requested)
                                 && !"BOOST".equals(requested)) {
-                            send(reply, 1, null, "Modo no permitido en v0.3.5");
+                            send(reply, 1, null, "Modo no permitido por Hearthroot Companion");
                             return;
                         }
                         selectProfile(context, requested);

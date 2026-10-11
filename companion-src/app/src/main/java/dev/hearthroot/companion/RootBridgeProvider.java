@@ -10,6 +10,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.ResultReceiver;
+import android.os.SystemClock;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -66,12 +67,17 @@ public final class RootBridgeProvider extends ContentProvider {
         };
         Intent intent = new Intent(ACTION).setPackage(TARGET);
         intent.putExtra("command", method);
-        if ("SET".equals(method)) intent.putExtra("profile", arg);
+
+        if ("SET".equals(method)) {
+            intent.putExtra("profile", arg);
+            intent.putExtra("sent_at_elapsed", SystemClock.elapsedRealtime());
+        }
+
         intent.putExtra("reply", callback);
         try {
             context.sendBroadcast(intent);
             if (!done.await(5, TimeUnit.SECONDS)) {
-                return response("OFFLINE", null, "Xiaomi Parts bridge did not respond");
+                return response("TIMEOUT", null, "Xiaomi Parts bridge did not respond within 5 seconds");
             }
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();

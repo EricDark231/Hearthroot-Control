@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.os.SystemClock;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -297,7 +298,12 @@ public final class MainActivity extends Activity {
         };
         Intent request = new Intent(ACTION).setPackage(TARGET);
         request.putExtra("command", command);
-        if (requested != null) request.putExtra("profile", requested);
+
+        if ("SET".equals(command)) {
+            request.putExtra("profile", requested);
+            request.putExtra("sent_at_elapsed", SystemClock.elapsedRealtime());
+        }
+
         request.putExtra("reply", reply);
         try {
             sendBroadcast(request);
