@@ -2,6 +2,7 @@ package dev.hearthroot.companion;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.BroadcastOptions;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -15,6 +16,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.os.SystemClock;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -45,6 +47,21 @@ public final class MainActivity extends Activity {
     private int requestSerial;
     private int pendingRequest;
     private boolean waitingForXiaomiParts;
+    private final java.util.ArrayList<Runnable> bridgeTimers =
+            new java.util.ArrayList<>();
+
+    private void scheduleBridgeTimer(Runnable task, long delayMs) {
+        bridgeTimers.add(task);
+        handler.postDelayed(task, delayMs);
+    }
+
+    private void clearBridgeTimers() {
+        for (Runnable task : bridgeTimers) {
+            handler.removeCallbacks(task);
+        }
+        bridgeTimers.clear();
+    }
+
 
     @Override
     public void onCreate(Bundle state) {
@@ -159,12 +176,13 @@ public final class MainActivity extends Activity {
     }
 
     private void refreshAll() {
-        refreshAll(false); // No abrir Xiaomi Parts al iniciar Companion.
+        // STATUS primero, descongelación puntual después.
+        // No se abre la interfaz de Xiaomi Parts.
+        refreshAll(true);
     }
 
     private void refreshAll(boolean mayWakeXiaomiParts) {
-        refreshLogs();
-        sendRequest("QUERY", null, mayWakeXiaomiParts);
+        sendRequest("STATUS", null, mayWakeXiaomiParts);
         refreshCpuOnline();
     }
 
@@ -184,24 +202,135 @@ public final class MainActivity extends Activity {
     // Sondeo pasivo. Nunca iniciar una Activity de Xiaomi Parts.
     // La consulta inicial al abrir Companion permanece pasiva.
     private void sendRequest(String command, String requested, boolean mayWake) {
+        // Una sola operación activa: evita reemplazar solicitudes pendientes.
+        if (pendingRequest != 0) {
+            android.util.Log.i("HearthrootBridge",
+                    "REQUEST SKIPPED: command=" + command
+                    + " pending=" + pendingRequest);
+            return;
+        }
+
         final int serial = ++requestSerial;
+        android.util.Log.i("HearthrootBridge",
+                "REQUEST START: command=" + command
+                + " serial=" + serial
+                + " previous=" + pendingRequest
+                + " elapsed=" + SystemClock.elapsedRealtime());
         pendingRequest = serial;
         waitingForXiaomiParts = false;
         setButtonsEnabled(false);
         details.setText("Comprobando puente Xiaomi Parts (" + command + ")...");
+        if ("STATUS".equals(command)) {
+            showBridgeUnverified();
+        }
         if ("QUERY".equals(command)) {
             selectedProfile.setText("Consultando Xiaomi Parts...");
             selectedProfile.setTextColor(AMBER);
         }
         if (mayWake) {
-            probeBridge(serial, 0, command, requested);
+            if ("STATUS".equals(command)) {
+                // Encolar STATUS antes de descongelar el receptor.
+                dispatchRequest(serial, command, requested);
+            } else {
+                // Encolar QUERY antes de descongelar; SET espera su respuesta.
+                probeBridge(serial, 0, command, requested);
+            }
+            wakeXiaomiParts(serial, command, requested);
         } else {
             dispatchRequest(serial, command, requested);
         }
     }
 
+    // Descongelación puntual mediante BakaSU. Android conserva su freezer.
+    private void wakeXiaomiParts(int serial, String command, String requested) {
+        new Thread(() -> {
+            Process process = null;
+            boolean success = false;
+            String result = "";
+
+            try {
+                process = new ProcessBuilder("su", "-c",
+                        "am unfreeze com.xiaomi.settings")
+                        .redirectErrorStream(true)
+                        .start();
+
+                if (!process.waitFor(5, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                    result = "timeout";
+                } else {
+                    success = process.exitValue() == 0;
+                    result = "exit=" + process.exitValue();
+                }
+            } catch (Exception e) {
+                result = e.getClass().getSimpleName();
+            } finally {
+                if (process != null) process.destroy();
+            }
+
+            final boolean woke = success;
+            final String outcome = result;
+
+            handler.post(() -> {
+                android.util.Log.i("HearthrootBridge",
+                        "WAKE RESULT: serial=" + serial
+                        + " success=" + woke
+                        + " result=" + outcome);
+
+                if (!isRequestActive(serial)) return;
+
+                if ("STATUS".equals(command)) {
+                    // STATUS ya fue enviado; no duplicar el broadcast.
+                    if (!woke) {
+                        android.util.Log.w("HearthrootBridge",
+                                "STATUS wake failed: " + outcome);
+                    }
+                } else if (!woke) {
+                    failRequest(serial,
+                            "No se pudo preparar Xiaomi Parts mediante BakaSU: "
+                            + outcome);
+                }
+                // QUERY ya fue enviado antes de la descongelación.
+                // Su callback es el único autorizado para iniciar SET.
+            });
+        }, "Hearthroot-Bridge-Wake").start();
+    }
+
+    // Descongelación posterior al envío de SET.
+    // No repetir QUERY ni SET: solo liberar su entrega pendiente.
+    private void wakePendingSet(int serial) {
+        new Thread(() -> {
+            Process process = null;
+            String result;
+            try {
+                process = new ProcessBuilder("su", "-c",
+                        "am unfreeze com.xiaomi.settings")
+                        .redirectErrorStream(true)
+                        .start();
+
+                if (!process.waitFor(5, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                    result = "timeout";
+                } else {
+                    result = "exit=" + process.exitValue();
+                }
+            } catch (Exception e) {
+                result = e.getClass().getSimpleName();
+            } finally {
+                if (process != null) process.destroy();
+            }
+
+            android.util.Log.i("HearthrootBridge",
+                    "SET WAKE RESULT: serial=" + serial
+                    + " result=" + result);
+        }, "Hearthroot-Set-Wake").start();
+    }
+
     private boolean isRequestActive(int serial) {
-        return pendingRequest == serial && !isFinishing() && !isDestroyed();
+        // Una respuesta tardía de una operación finalizada se ignora.
+        // No representa un error del puente.
+        return pendingRequest == serial
+                && !isFinishing()
+                && !isDestroyed();
     }
 
     // PING es exclusivamente QUERY; no duplicar SET durante los reintentos.
@@ -211,10 +340,24 @@ public final class MainActivity extends Activity {
         ResultReceiver pingReply = new ResultReceiver(handler) {
             @Override
             protected void onReceiveResult(int code, Bundle data) {
-                if (!isRequestActive(serial) || !completed.compareAndSet(false, true)) return;
+                android.util.Log.i("HearthrootBridge",
+                        "PROBE CALLBACK: attempt=" + attempt
+                        + " serial=" + serial
+                        + " active=" + isRequestActive(serial)
+                        + " completed=" + completed.get()
+                        + " code=" + code
+                        + " profile=" + (data == null ? null : data.getString("profile")));
+
+                if (!isRequestActive(serial)
+                        || !completed.compareAndSet(false, true)) return;
+
                 if (code == 0 && data != null && data.getString("profile") != null) {
                     waitingForXiaomiParts = false;
+                    // QUERY confirmado. Enviar SET antes de descongelar.
                     dispatchRequest(serial, command, requested);
+                    if ("SET".equals(command) && isRequestActive(serial)) {
+                        wakePendingSet(serial);
+                    }
                 } else {
                     String reason = data == null ? "Respuesta vacía" :
                             data.getString("message", "Error sin detalle");
@@ -226,7 +369,7 @@ public final class MainActivity extends Activity {
         ping.putExtra("command", "QUERY");
         ping.putExtra("reply", pingReply);
         try {
-            sendBroadcast(ping);
+            sendBridgeBroadcast(ping);
         } catch (RuntimeException e) {
             if (completed.compareAndSet(false, true)) {
                 failRequest(serial, "No se pudo consultar el puente: " +
@@ -234,7 +377,7 @@ public final class MainActivity extends Activity {
             }
             return;
         }
-        handler.postDelayed(() -> {
+        scheduleBridgeTimer(() -> {
             if (isRequestActive(serial) && completed.compareAndSet(false, true)) {
                 onProbeTimeout(serial, attempt, command, requested);
             }
@@ -249,7 +392,7 @@ public final class MainActivity extends Activity {
         if (!isRequestActive(serial)) return;
         if (attempt < 3) {
             details.setText("Esperando puente LSPosed (" + (attempt + 1) + "/3)...");
-            handler.postDelayed(
+            scheduleBridgeTimer(
                     () -> probeBridge(serial, attempt + 1, command, requested),
                     350);
         } else {
@@ -261,9 +404,26 @@ public final class MainActivity extends Activity {
 
     private void failRequest(int serial, String reason) {
         if (!isRequestActive(serial)) return;
+        android.util.Log.i("HearthrootBridge",
+                "REQUEST FAILED: serial=" + serial
+                + " reason=" + reason
+                + " elapsed=" + SystemClock.elapsedRealtime());
+        clearBridgeTimers();
         pendingRequest = 0;
         setButtonsEnabled(true);
+        if (hasConfirmedBridgeStatus) showBridgeStale();
         showFallback(reason);
+    }
+
+    private void sendBridgeBroadcast(Intent intent) {
+        if (android.os.Build.VERSION.SDK_INT >= 34) {
+            BroadcastOptions options = BroadcastOptions.makeBasic();
+            options.setDeferralPolicy(
+                    BroadcastOptions.DEFERRAL_POLICY_NONE);
+            sendBroadcast(intent, null, options.toBundle());
+        } else {
+            sendBroadcast(intent);
+        }
     }
 
     private void dispatchRequest(int serial, String command, String requested) {
@@ -271,12 +431,33 @@ public final class MainActivity extends Activity {
         ResultReceiver reply = new ResultReceiver(handler) {
             @Override
             protected void onReceiveResult(int code, Bundle data) {
+                android.util.Log.i("HearthrootBridge",
+                        "REQUEST CALLBACK: command=" + command
+                        + " serial=" + serial
+                        + " active=" + isRequestActive(serial)
+                        + " code=" + code
+                        + " profile=" + (data == null ? null : data.getString("profile")));
+
                 if (!isRequestActive(serial)) return;
+
+                // Cancelar los temporizadores al recibir la respuesta.
+                clearBridgeTimers();
                 pendingRequest = 0;
                 setButtonsEnabled(true);
                 String message = data == null ? "Sin detalle" :
                         data.getString("message", "Sin detalle");
                 String profile = data == null ? null : data.getString("profile");
+                if ("STATUS".equals(command) && code == 0 && data != null) {
+                    showBridgeStatus(data);
+
+                    if (!data.getBoolean("profile_available", false)
+                            || profile == null) {
+                        showFallback("Diagnóstico recibido, pero Xiaomi Parts "
+                                + "no pudo confirmar el perfil: " + message);
+                        return;
+                    }
+                }
+
                 if (code == 0 && profile != null) {
                     // El perfil es lectura devuelta por Xiaomi Parts, no una suposición.
                     getPreferences(MODE_PRIVATE).edit()
@@ -287,9 +468,6 @@ public final class MainActivity extends Activity {
                             (waitingForXiaomiParts ?
                              " Regresa a Companion para revisar el resultado." : ""));
                     refreshCpuOnline();
-                    if ("SET".equals(command)) {
-                        handler.postDelayed(() -> refreshLogs(), 350);
-                    }
                 } else {
                     showFallback("Xiaomi Parts respondió con error: " + message);
                 }
@@ -297,19 +475,28 @@ public final class MainActivity extends Activity {
         };
         Intent request = new Intent(ACTION).setPackage(TARGET);
         request.putExtra("command", command);
-        if (requested != null) request.putExtra("profile", requested);
+
+        if ("SET".equals(command)) {
+            request.putExtra("profile", requested);
+            request.putExtra("sent_at_elapsed", SystemClock.elapsedRealtime());
+        }
+
         request.putExtra("reply", reply);
         try {
-            sendBroadcast(request);
+            sendBridgeBroadcast(request);
         } catch (RuntimeException e) {
             failRequest(serial, "No se pudo enviar el comando: " +
                     e.getClass().getSimpleName());
             return;
         }
-        handler.postDelayed(() -> {
+        scheduleBridgeTimer(() -> {
             if (isRequestActive(serial)) {
-                failRequest(serial, "El puente respondió al sondeo, pero no confirmó " +
-                        "el comando a tiempo.");
+                String reason = "STATUS".equals(command)
+                        ? "Xiaomi Parts no respondió al diagnóstico STATUS. "
+                                + "El estado de LSPosed permanece sin verificar."
+                        : "El puente no confirmó el comando " + command
+                                + " dentro del tiempo de espera.";
+                failRequest(serial, reason);
             }
         }, 9000);
     }
@@ -383,69 +570,89 @@ public final class MainActivity extends Activity {
         }, "Hearthroot-Cpu-Read").start();
     }
 
-    private void refreshLogs() {
-        new Thread(() -> {
-            String data;
-            try {
-                // Only read from LSPosed's module log. No preference or kernel writes.
-                String cmd = "f=$(ls -t /data/adb/lspd/log/modules_*.log 2>/dev/null | " +
-                        "head -n 1); if [ -z \"$f\" ]; then echo NO_MODULE_LOG; exit 0; fi; " +
-                        "grep -F 'dev.hearthroot.companion' \"$f\" | tail -n 140; exit 0";
-                Process process = new ProcessBuilder("su", "-c", cmd)
-                        .redirectErrorStream(true).start();
-                if (!process.waitFor(15, TimeUnit.SECONDS)) {
-                    process.destroyForcibly();
-                    throw new IllegalStateException("Root sin respuesta");
-                }
-                StringBuilder out = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = reader.readLine()) != null && out.length() < 60000)
-                        out.append(line).append('\n');
-                }
-                data = out.toString();
-            } catch (Exception e) {
-                data = "READ_ERROR: " + e.getClass().getSimpleName();
-            }
-            final String log = data;
-            runOnUiThread(() -> {
-                if (!isFinishing() && !isDestroyed()) showLogs(log);
-            });
-        }, "Hearthroot-Log-Read").start();
+    private boolean hasConfirmedBridgeStatus = false;
+
+    private void showBridgeUnverified() {
+        if (hasConfirmedBridgeStatus) {
+            headline.setText("Actualizando diagnóstico · último estado conocido");
+            headline.setTextColor(AMBER);
+            return;
+        }
+
+        injection.setText("○ Inyección sin verificar");
+        classes.setText("○ Clases sin verificar");
+        hook.setText("○ Hook sin verificar");
+        lastEvent.setText("Sin verificar · esperando Xiaomi Parts");
+
+        injection.setTextColor(AMBER);
+        classes.setTextColor(AMBER);
+        hook.setTextColor(AMBER);
+
+        headline.setText("Esperando diagnóstico del módulo");
+        headline.setTextColor(AMBER);
     }
 
-    private void showLogs(String log) {
-        boolean load = log.contains("onModuleLoaded process=com.xiaomi.settings") &&
-                log.contains("onPackageReady package=com.xiaomi.settings");
-        boolean classOk = log.contains("FOUND com.xiaomi.settings.cpu.CpuControlManager") &&
-                log.contains("FOUND com.xiaomi.settings.cpu.CpuProfile");
-        boolean hookOk = log.contains("HOOK INSTALLED: CpuControlManager.selectProfile");
-        boolean bridge = log.contains("BRIDGE READY:");
-        injection.setText(load ? "● Inyección confirmada" : "○ No confirmada en logs");
-        classes.setText(classOk ? "● Ambas clases encontradas" : "○ No confirmadas");
-        hook.setText(hookOk ? "● selectProfile() instalado" : "○ Sin confirmar");
-        injection.setTextColor(load ? GREEN : AMBER);
-        classes.setTextColor(classOk ? GREEN : AMBER);
-        hook.setTextColor(hookOk ? GREEN : AMBER);
-        if (load && classOk && hookOk && bridge) {
-            headline.setText("LSPosed y canal listos");
-            headline.setTextColor(GREEN);
-        } else if (load && classOk && hookOk) {
-            headline.setText("Hook activo; canal pendiente");
-            headline.setTextColor(AMBER);
-        } else {
-            headline.setText("Diagnóstico pendiente");
-            headline.setTextColor(AMBER);
-        }
-        int at = log.lastIndexOf("PROFILE SELECTED:");
-        if (at >= 0) {
-            int start = at + "PROFILE SELECTED:".length();
-            int end = log.indexOf('\n', start);
-            String value = log.substring(start, end < 0 ? log.length() : end).trim();
-            lastEvent.setText(value);
+    private void showBridgeStale() {
+        if (!hasConfirmedBridgeStatus) return;
+
+        injection.setTextColor(AMBER);
+        classes.setTextColor(AMBER);
+        hook.setTextColor(AMBER);
+
+        headline.setText("Último diagnóstico conocido · sin confirmar");
+        headline.setTextColor(AMBER);
+        lastEvent.setText("Último evento conocido · sin actualizar");
+    }
+
+    private void showBridgeStatus(Bundle data) {
+        hasConfirmedBridgeStatus = true;
+        boolean injected = data.getBoolean("injected", false);
+        boolean managerFound = data.getBoolean("manager_class_found", false);
+        boolean profileFound = data.getBoolean("profile_class_found", false);
+        boolean hookInstalled = data.getBoolean(
+                "select_profile_hook_installed", false);
+        boolean attachInstalled = data.getBoolean(
+                "attach_hook_installed", false);
+        boolean bridgeReady = data.getBoolean("bridge_ready", false);
+
+        boolean classesFound = managerFound && profileFound;
+
+        String interceptedProfile = data.getString("last_intercepted_profile");
+        long interceptedAt = data.getLong("last_intercepted_elapsed", -1L);
+        long now = SystemClock.elapsedRealtime();
+
+        if (interceptedProfile != null && interceptedAt > 0L
+                && interceptedAt <= now) {
+            long seconds = (now - interceptedAt) / 1000L;
+            String elapsed = seconds < 60L
+                    ? "hace " + seconds + " s"
+                    : "hace " + (seconds / 60L) + " min";
+            lastEvent.setText(pretty(interceptedProfile) + " · " + elapsed);
         } else {
             lastEvent.setText("Sin eventos en esta sesión");
+        }
+
+        injection.setText(injected
+                ? "● Inyección confirmada"
+                : "○ Inyección no confirmada");
+        classes.setText(classesFound
+                ? "● Ambas clases encontradas"
+                : "○ Faltan clases de Xiaomi Parts");
+        hook.setText(hookInstalled
+                ? "● selectProfile() instalado"
+                : "○ Hook selectProfile() no instalado");
+
+        injection.setTextColor(injected ? GREEN : AMBER);
+        classes.setTextColor(classesFound ? GREEN : AMBER);
+        hook.setTextColor(hookInstalled ? GREEN : AMBER);
+
+        if (injected && classesFound && hookInstalled
+                && attachInstalled && bridgeReady) {
+            headline.setText("LSPosed y canal listos");
+            headline.setTextColor(GREEN);
+        } else {
+            headline.setText("Diagnóstico parcial del módulo");
+            headline.setTextColor(AMBER);
         }
     }
 

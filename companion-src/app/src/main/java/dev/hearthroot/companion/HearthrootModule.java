@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.ResultReceiver;
 import android.util.Log;
+import android.os.SystemClock;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -33,9 +34,26 @@ public final class HearthrootModule extends XposedModule {
     private static final String EXTRA_REPLY = "reply";
     private static final String EXTRA_COMMAND = "command";
     private static final String EXTRA_PROFILE = "profile";
+    private static final String EXTRA_SENT_AT = "sent_at_elapsed";
+    private static final long SET_MAX_AGE_MS = 5000L;
 
     private ClassLoader targetLoader;
     private BroadcastReceiver bridgeReceiver;
+    private volatile boolean managerClassFound;
+    private volatile boolean profileClassFound;
+    private volatile boolean selectProfileHookInstalled;
+    private volatile boolean attachHookInstalled;
+    private volatile ProfileEvent lastInterceptedEvent;
+
+    private static final class ProfileEvent {
+        final String profile;
+        final long elapsed;
+
+        ProfileEvent(String profile, long elapsed) {
+            this.profile = profile;
+            this.elapsed = elapsed;
+        }
+    }
 
     public HearthrootModule() {
         super();
@@ -64,10 +82,20 @@ public final class HearthrootModule extends XposedModule {
     }
 
     private void checkClass(String name) {
+        boolean found = false;
+
         try {
-            report("FOUND " + Class.forName(name, false, targetLoader).getName());
+            Class<?> resolved = Class.forName(name, false, targetLoader);
+            found = true;
+            report("FOUND " + resolved.getName());
         } catch (Throwable t) {
             report("MISSING " + name + " " + t.getClass().getSimpleName());
+        }
+
+        if (MANAGER.equals(name)) {
+            managerClassFound = found;
+        } else if (PROFILE.equals(name)) {
+            profileClassFound = found;
         }
     }
 
@@ -82,9 +110,15 @@ public final class HearthrootModule extends XposedModule {
                 .intercept(chain -> {
                     Object selected = chain.getArg(0);
                     Object result = chain.proceed();
-                    report("PROFILE SELECTED: " + String.valueOf(selected));
+
+                    String profileName = String.valueOf(selected);
+                    lastInterceptedEvent = new ProfileEvent(
+                            profileName, SystemClock.elapsedRealtime());
+
+                    report("PROFILE SELECTED: " + profileName);
                     return result;
                 });
+            selectProfileHookInstalled = true;
             report("HOOK INSTALLED: CpuControlManager.selectProfile");
         } catch (Throwable e) {
             report("HOOK FAILED: " + e);
@@ -103,12 +137,13 @@ public final class HearthrootModule extends XposedModule {
                     if (TARGET.equals(context.getPackageName())) {
                         try {
                             ensureBridge(context);
-                        } catch (Throwable t) {
+                         } catch (Throwable t) {
                             report("BRIDGE FAILED: " + t);
-                        }
+                         }
                     }
                     return result;
                 });
+            attachHookInstalled = true;
             report("HOOK INSTALLED: Application.attach");
         } catch (Throwable t) {
             report("BRIDGE HOOK FAILED: " + t);
@@ -121,6 +156,7 @@ public final class HearthrootModule extends XposedModule {
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context ignored, Intent intent) {
+                report("BRIDGE RX: broadcast received");
                 // Defense in depth: validate the real Android sender UID, not extras.
                 int expectedUid;
                 try {
@@ -156,15 +192,32 @@ public final class HearthrootModule extends XposedModule {
                 if (reply == null) return;
                 try {
                     String command = intent.getStringExtra(EXTRA_COMMAND);
-                    if ("QUERY".equals(command)) {
-                        send(reply, 0, getSelectedProfile(context), "Perfil declarado por Xiaomi Parts");
+                    if ("STATUS".equals(command)) {
+                        report("BRIDGE STATUS: processing");
+                        sendStatus(reply, context);
+                    } else if ("QUERY".equals(command)) {
+                        report("BRIDGE QUERY: processing");
+                        String current = getSelectedProfile(context);
+                        report("BRIDGE QUERY: profile=" + current);
+                        send(reply, 0, current, "Perfil declarado por Xiaomi Parts");
+                        report("BRIDGE QUERY: reply sent");
                     } else if ("SET".equals(command)) {
+                        report("BRIDGE SET: processing");
+                        long sentAt = intent.getLongExtra(EXTRA_SENT_AT, -1L);
+                        long now = SystemClock.elapsedRealtime();
+
+                        if (sentAt < 0 || sentAt > now
+                                || now - sentAt > SET_MAX_AGE_MS) {
+                            report("BRIDGE SET REJECTED: expired or invalid request");
+                            send(reply, 1, null, "Solicitud SET caducada");
+                            return;
+                        }
                         String requested = intent.getStringExtra(EXTRA_PROFILE);
                         // Allow only validated non-EXTREME modes. Never modify thermal controls.
                         if (!"NORMAL".equals(requested)
                                 && !"ECONOMY".equals(requested)
                                 && !"BOOST".equals(requested)) {
-                            send(reply, 1, null, "Modo no permitido en v0.3.5");
+                            send(reply, 1, null, "Modo no permitido por Hearthroot Companion");
                             return;
                         }
                         selectProfile(context, requested);
@@ -225,6 +278,38 @@ public final class HearthrootModule extends XposedModule {
             if (cause instanceof Exception) throw (Exception) cause;
             throw e;
         }
+    }
+
+    private void sendStatus(ResultReceiver receiver, Context context) {
+        Bundle data = new Bundle();
+
+        data.putBoolean("injected", true);
+        data.putBoolean("manager_class_found", managerClassFound);
+        data.putBoolean("profile_class_found", profileClassFound);
+        data.putBoolean("select_profile_hook_installed", selectProfileHookInstalled);
+        data.putBoolean("attach_hook_installed", attachHookInstalled);
+        data.putBoolean("bridge_ready", bridgeReceiver != null);
+
+        ProfileEvent event = lastInterceptedEvent;
+        if (event != null && event.elapsed > 0L) {
+            data.putString("last_intercepted_profile", event.profile);
+            data.putLong("last_intercepted_elapsed", event.elapsed);
+        }
+
+        try {
+            String current = getSelectedProfile(context);
+            data.putString(EXTRA_PROFILE, current);
+            data.putBoolean("profile_available", true);
+            data.putString("message", "Diagnóstico obtenido de Xiaomi Parts");
+        } catch (Throwable t) {
+            data.putBoolean("profile_available", false);
+            data.putString("message", "Perfil no disponible: "
+                    + t.getClass().getSimpleName());
+            report("BRIDGE STATUS PROFILE ERROR: " + t);
+        }
+
+        receiver.send(0, data);
+        report("BRIDGE STATUS: reply sent");
     }
 
     private static void send(ResultReceiver receiver, int code, String profile,
