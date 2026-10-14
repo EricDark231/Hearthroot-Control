@@ -8,7 +8,45 @@
   const ENABLE_WRITES = true;
 
   const choices = [...document.querySelectorAll(".choice")];
-  const notice = document.getElementById("preview-status");
+  const notice = document.getElementById("apply-progress-message");
+  const progressPanel = document.getElementById("apply-progress");
+  const progressFill = document.getElementById("apply-progress-fill");
+
+  function progressStage(message, state = "working") {
+    progressPanel.hidden = false;
+    progressPanel.dataset.state = state;
+
+    notice.classList.remove("apply-message-enter");
+    void notice.offsetWidth;
+    notice.textContent = message;
+    notice.classList.add("apply-message-enter");
+  }
+
+  function progressMessage(message, state = "info") {
+    // Do not interrupt an ongoing profile application.
+    if (busy && progressPanel.dataset.state === "working") return;
+
+    // Informational messages should not open the Apply panel.
+    if (state === "info") return;
+
+    progressStage(message, state);
+  }
+
+  function progressStart(profile) {
+    progressFill.style.width = "";
+    progressStage(`Preparing ${profile} profile...`);
+  }
+
+  function progressWorking() {
+    progressStage("Applying kernel and Xiaomi Parts settings...");
+  }
+
+  function progressFinish(message, success) {
+    progressStage(message, success ? "success" : "error");
+    if (success) {
+      progressFill.style.width = "100%";
+    }
+  }
   const currentState = document.getElementById("profile-current-state");
   const currentDetail = document.getElementById("profile-current-detail");
   const refreshButton = document.getElementById("profile-refresh");
@@ -26,6 +64,15 @@
     document.getElementById("experimental-io");
   const experimentalXiaomi = document.getElementById("experimental-xiaomi");
 
+  const recoveryCpu = document.getElementById("recovery-cpu");
+  const recoveryIo = document.getElementById("recovery-io");
+  const recoveryApply = document.getElementById("recovery-apply");
+  const recoveryStatus = document.getElementById("recovery-status");
+
+  const companionStatus = document.getElementById("companion-status");
+  const companionDetail = document.getElementById("companion-detail");
+
+  let recoveryBusy = false;
   let customReady = false;
   let customBusy = false;
   let customCpuOptions = [];
@@ -44,7 +91,7 @@
       cpu: "schedutil",
       io: "kyber",
       note:
-        "CPU/GPU frequency limits and thermal settings remain unchanged."
+        "CPU/GPU frequency limits remain unchanged. Thermal behavior is managed by Xiaomi Parts."
     },
     Native: {
       description:
@@ -52,7 +99,7 @@
       cpu: "sugov_ext",
       io: "none",
       note:
-        "CPU/GPU frequency limits and thermal settings remain unchanged."
+        "CPU/GPU frequency limits remain unchanged. Thermal behavior is managed by Xiaomi Parts."
     },
     "Battery Saver": {
       description:
@@ -60,7 +107,7 @@
       cpu: "conservative",
       io: "none",
       note:
-        "CPU/GPU frequency limits and thermal settings remain unchanged."
+        "CPU/GPU frequency limits remain unchanged. Thermal behavior is managed by Xiaomi Parts."
     },
     Performance: {
       description:
@@ -90,6 +137,40 @@
     experimentalIo.disabled = busy || customBusy || !customReady;
     experimentalXiaomi.disabled = busy || customBusy;
 
+    recoveryCpu.disabled =
+      busy || customBusy || recoveryBusy || !customCpuOptions.length;
+    recoveryIo.disabled =
+      busy || customBusy || recoveryBusy || !customIoOptions.length;
+
+    const recoveryCpuValid =
+      recoveryCpu.value === "keep" ||
+      customCpuOptions.includes(recoveryCpu.value);
+
+    const recoveryIoValid =
+      recoveryIo.value === "keep" ||
+      customIoOptions.includes(recoveryIo.value);
+
+    recoveryApply.disabled =
+      busy || customBusy || recoveryBusy || !ENABLE_WRITES ||
+      !recoveryCpuValid || !recoveryIoValid ||
+      (recoveryCpu.value === "keep" && recoveryIo.value === "keep");
+
+
+    if (companionStatus && companionDetail) {
+      if (companionAvailable) {
+        companionStatus.textContent = companionProfile
+          ? `Connected · ${companionProfile}`
+          : "Connected";
+        companionStatus.dataset.state = "connected";
+        companionDetail.textContent =
+          "Xiaomi Parts synchronization is available for supported profiles.";
+      } else {
+        companionStatus.textContent = "Unavailable";
+        companionStatus.dataset.state = "unavailable";
+        companionDetail.textContent =
+          "Kernel profiles remain available. Xiaomi Parts synchronization is disabled.";
+      }
+    }
 
     const info = profileDescriptions[selected];
 
@@ -126,7 +207,7 @@
         ? "Apply Custom"
         : `Apply ${selected}`;
       applyButton.disabled =
-        busy || !compatible || !supported || !ENABLE_WRITES ||
+        busy || recoveryBusy || !compatible || !supported || !ENABLE_WRITES ||
         (selected === "Experimental" && (!customReady || customBusy));
     }
 
@@ -205,6 +286,59 @@
     );
   }
 
+
+  // Companion availability is confirmed through a live Xiaomi Parts QUERY.
+  const XIAOMI_SCRIPT =
+    "/data/adb/modules/hearthroot.control/scripts/xiaomi-sync.sh";
+
+  let companionAvailable = false;
+  let companionProfile = null;
+  let companionQuery = null;
+
+  async function refreshCompanionState() {
+    if (companionQuery) return companionQuery;
+
+    companionQuery = (async () => {
+      companionAvailable = false;
+      companionProfile = null;
+      render();
+
+      try {
+      if (!window.HearthrootBridge?.execute) {
+        return;
+      }
+
+      const result = await window.HearthrootBridge.execute(
+        `/system/bin/sh ${XIAOMI_SCRIPT} QUERY`,
+        15000
+      );
+
+      if (result.exitCode !== undefined && result.exitCode !== 0) {
+        throw new Error("Companion QUERY returned a failure");
+      }
+
+      const match = (result.stdout || "").match(
+        /^XIAOMI_PROFILE=(NORMAL|ECONOMY|BOOST|EXTREME|CUSTOM)$/m
+      );
+
+      if (match) {
+        companionAvailable = true;
+        companionProfile = match[1];
+      }
+    } catch (error) {
+      console.warn("Companion unavailable:", error);
+      } finally {
+        render();
+      }
+    })();
+
+    try {
+      return await companionQuery;
+    } finally {
+      companionQuery = null;
+    }
+  }
+
   async function loadCustomOptions() {
     if (customBusy) return;
 
@@ -257,6 +391,31 @@
       fillSelect(experimentalCpu, customCpuOptions);
       fillSelect(experimentalIo, customIoOptions);
 
+      const fillRecoverySelect = (element, values) => {
+        const previous = element.value;
+        element.textContent = "";
+
+        const keep = document.createElement("option");
+        keep.value = "keep";
+        keep.textContent = "Keep current";
+        element.appendChild(keep);
+
+        for (const value of values) {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          element.appendChild(option);
+        }
+
+        element.value =
+          previous === "keep" || values.includes(previous)
+            ? previous
+            : "keep";
+      };
+
+      fillRecoverySelect(recoveryCpu, customCpuOptions);
+      fillRecoverySelect(recoveryIo, customIoOptions);
+
       if (savedCustomSelection) {
         if (customCpuOptions.includes(savedCustomSelection.cpu)) {
           experimentalCpu.value = savedCustomSelection.cpu;
@@ -272,15 +431,18 @@
       customReady = true;
 
       if (selected === "Experimental") {
-        notice.textContent =
-          "Custom settings ready. Select your options before applying.";
+        progressMessage(
+          "Custom settings ready. Select your options before applying."
+        );
       }
     } catch (error) {
       customReady = false;
 
       if (selected === "Experimental") {
-        notice.textContent =
-          `Could not load custom options: ${error.message}`;
+        progressMessage(
+          `Could not load custom options: ${error.message}`,
+          "error"
+        );
       }
     } finally {
       customBusy = false;
@@ -367,10 +529,10 @@
 
           render();
 
-          notice.textContent =
+          progressMessage(
             `Last applied: ${restored}. ` +
-            "Check the active kernel configuration " +
-            "for current values.";
+            "Check the active kernel configuration for current values."
+          );
         }
       }
 
@@ -421,7 +583,7 @@
     refreshDiagnosticCards();
   }
 
-  async function refreshStatus() {
+  async function refreshStatus(refreshCompanion = true) {
     if (busy) return;
 
     busy = true;
@@ -434,9 +596,13 @@
 
     try {
       // Both commands are read-only.
-      await execute("check");
-
-      const result = await execute("status");
+      // Check compatibility and read kernel state in one root call.
+      // Status runs only if compatibility validation succeeds.
+      const result = await window.HearthrootBridge.execute(
+        `/system/bin/sh ${MODULE_SCRIPT} check >/dev/null && ` +
+        `/system/bin/sh ${MODULE_SCRIPT} status`,
+        30000
+      );
       const detected = parseStatus(result.stdout);
       lastStatus = detected;
 
@@ -447,16 +613,82 @@
     } catch (error) {
       currentState.textContent = "Unavailable";
       currentDetail.textContent = error.message;
-      notice.textContent =
-        "Unable to verify kernel configuration. No changes applied.";
+      progressMessage(
+        "Unable to verify kernel configuration. No changes applied.",
+        "error"
+      );
     } finally {
       busy = false;
+
+      if (refreshCompanion) {
+        await refreshCompanionState();
+      }
+
+      render();
+    }
+  }
+
+
+  async function applyRecovery() {
+    if (!ENABLE_WRITES || busy || customBusy || recoveryBusy) return;
+
+    const cpu = recoveryCpu.value;
+    const io = recoveryIo.value;
+
+    const cpuValid =
+      cpu === "keep" || customCpuOptions.includes(cpu);
+
+    const ioValid =
+      io === "keep" || customIoOptions.includes(io);
+
+    if (!cpuValid || !ioValid) {
+      recoveryStatus.textContent = "Invalid recovery selection.";
+      return;
+    }
+
+    if (cpu === "keep" && io === "keep") {
+      recoveryStatus.textContent =
+        "Choose at least one kernel setting to recover.";
+      return;
+    }
+
+    recoveryBusy = true;
+    render();
+
+    const cpuLabel =
+      cpu === "keep" ? "CPU unchanged" : `CPU ${cpu}`;
+
+    const ioLabel =
+      io === "keep" ? "I/O unchanged" : `I/O ${io}`;
+
+    recoveryStatus.textContent =
+      `Applying recovery: ${cpuLabel}, ${ioLabel}...`;
+
+    try {
+      const result = await executeIntegrated(
+        `recovery ${cpu} ${io}`
+      );
+
+      if (!/^RECOVERY=OK$/m.test(result.stdout || "")) {
+        throw new Error("Recovery operation was not confirmed");
+      }
+
+      await refreshStatus(false);
+
+      recoveryStatus.textContent =
+        `Recovery applied: ${cpuLabel}, ${ioLabel}. ` +
+        "Xiaomi Parts and boot settings were not modified.";
+    } catch (error) {
+      recoveryStatus.textContent =
+        `Recovery failed: ${error.message}. Check active kernel values.`;
+    } finally {
+      recoveryBusy = false;
       render();
     }
   }
 
   async function applyProfile() {
-    if (!ENABLE_WRITES || busy || !compatible) return;
+    if (!ENABLE_WRITES || busy || recoveryBusy || !compatible) return;
     if (!supportedProfiles.includes(selected)) return;
 
     const actions = {
@@ -480,13 +712,13 @@
 
       if (!customCpuOptions.includes(requestedCpu) ||
           !customIoOptions.includes(requestedIo)) {
-        notice.textContent = "Invalid custom selection.";
+        progressMessage("Invalid custom selection.", "error");
         return;
       }
 
       requestedXiaomi = experimentalXiaomi.value;
       if (!["none", "normal", "economy", "boost"].includes(requestedXiaomi)) {
-        notice.textContent = "Invalid Xiaomi Parts selection.";
+        progressMessage("Invalid Xiaomi Parts selection.", "error");
         return;
       }
       action = `custom ${requestedCpu} ${requestedIo} ${requestedXiaomi}`;
@@ -496,28 +728,58 @@
 
     busy = true;
     render();
-    notice.textContent = `Applying ${requested}...`;
+    progressFill.style.width = "";
+    progressWorking();
 
     let commandError = null;
     let syncState = "";
     try {
       const result = await executeIntegrated(action);
       syncState = result.stdout?.match(/^XIAOMI_SYNC=(.+)$/m)?.[1] || "UNCONFIRMED";
+      progressStage("Kernel command completed. Checking active settings...");
     } catch (error) {
       commandError = error;
     } finally {
       busy = false;
-      await refreshStatus();
+
+      // The integrated backend already reports the Xiaomi synchronization
+      // result. Avoid an immediate duplicate Companion QUERY after Apply.
+      if (!commandError) {
+        const syncMatch = syncState.match(/^OK:(NORMAL|ECONOMY|BOOST)$/);
+
+        if (syncMatch) {
+          companionAvailable = true;
+          companionProfile = syncMatch[1];
+        } else if (syncState === "SKIPPED:COMPANION_UNAVAILABLE") {
+          companionAvailable = false;
+          companionProfile = null;
+        }
+      }
+
+      if (!commandError) {
+        progressStage("Verifying CPU, I/O and Xiaomi Parts...");
+      }
+      await refreshStatus(false);
       refreshDiagnosticCards();
     }
 
     if (commandError) {
-      notice.textContent =
-        `Apply failed: ${commandError.message}. Check active values.`;
+      progressFinish(
+        `Apply failed: ${commandError.message}. Check active values.`,
+        false
+      );
       return;
     }
 
-    let verified = lastStatus?.name === requested;
+    if (!lastStatus || !compatible) {
+      progressFinish(
+        `Unable to verify ${requested}. Check the active kernel configuration.`,
+        false
+      );
+      return;
+    }
+
+    let verified = lastStatus.name === requested;
 
     if (requested === "Experimental") {
       verified = Boolean(
@@ -529,21 +791,49 @@
     }
 
 
-    if (verified) {
+    const expectedXiaomi = requested === "Experimental"
+      ? {
+          none: null,
+          normal: "NORMAL",
+          economy: "ECONOMY",
+          boost: "BOOST"
+        }[requestedXiaomi]
+      : {
+          Native: "NORMAL",
+          Balanced: "NORMAL",
+          "Battery Saver": "ECONOMY",
+          Performance: "BOOST"
+        }[selected];
+
+    const companionSkipped =
+      syncState === "SKIPPED:COMPANION_UNAVAILABLE";
+
+    const syncVerified = expectedXiaomi === null
+      ? syncState === "SKIPPED:NO_SYNC_REQUESTED"
+      : syncState === `OK:${expectedXiaomi}` || companionSkipped;
+
+    if (verified && syncVerified) {
       try {
+        progressStage("Saving boot configuration...");
         await executeBoot(`save ${action}`);
         await refreshBootState();
       } catch (error) {
-        notice.textContent =
+        progressFinish(
           `${requested} verified, but could not save boot state: ` +
-          error.message;
+          error.message,
+          false
+        );
         return;
       }
     }
 
-    notice.textContent = verified
+    const finalMessage = verified && syncVerified
       ? `${requested} settings verified as active. Xiaomi Parts: ${syncState}.`
-      : `Settings do not fully match ${requested}. Check diagnostics. Xiaomi Parts: ${syncState}.`;
+      : verified
+        ? `${requested} kernel settings applied, but Xiaomi Parts synchronization is not confirmed (${syncState}). Profile not saved.`
+        : `Settings do not fully match ${requested}. Check diagnostics. Xiaomi Parts: ${syncState}.`;
+
+    progressFinish(finalMessage, verified && syncVerified);
   }
 
   for (const button of choices) {
@@ -551,15 +841,12 @@
       selectionTouched = true;
       selected = button.dataset.profile;
 
-      notice.textContent =
-        supportedProfiles.includes(selected)
-          ? `${selected} selected. No changes applied.`
-          : `${selected} is not implemented yet.`;
+
 
       render();
 
-      syncKernelViews();
-
+      // Profile selection only updates the UI.
+      // Kernel state is read on startup, Refresh and after Apply.
       if (selected === "Experimental" && !customReady) {
         loadCustomOptions();
       }
@@ -570,6 +857,9 @@
 
   refreshButton?.addEventListener("click", refreshStatus);
   applyButton?.addEventListener("click", applyProfile);
+  recoveryApply?.addEventListener("click", applyRecovery);
+  recoveryCpu?.addEventListener("change", render);
+  recoveryIo?.addEventListener("change", render);
 
   experimentalCpu?.addEventListener("change", render);
   experimentalIo?.addEventListener("change", render);
@@ -577,6 +867,7 @@
   render();
   refreshBootState();
   refreshStatus();
+  loadCustomOptions();
 
   // One delayed refresh for recently booted devices.
   setTimeout(syncKernelViews, 30000);

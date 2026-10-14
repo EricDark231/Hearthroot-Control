@@ -398,6 +398,13 @@ echo '=== END ==='
     document.getElementById("refresh-diagnostics")
       ?.addEventListener("click", runDiagnostics);
 
-    runDiagnostics();
+    // Allow initial UI and kernel status requests to start first.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          runDiagnostics();
+        }, 500);
+      });
+    });
   });
 })();

@@ -71,8 +71,45 @@
     Performance or advanced Experimental settings.
   </p>
 </div>
+
+<div class="hearth-settings-divider"></div>
+
+<div class="recovery-controls" id="recovery-controls">
+  <div class="recovery-heading">
+    <small>KERNEL RECOVERY</small>
+    <strong>Recovery Controls</strong>
+    <p>
+      Restore CPU or storage scheduling without changing profiles,
+      Xiaomi Parts or boot settings.
+    </p>
+  </div>
+
+  <div class="recovery-fields">
+    <label for="recovery-cpu">CPU GOVERNOR</label>
+    <select id="recovery-cpu" disabled>
+      <option value="keep">Keep current</option>
+    </select>
+
+    <label for="recovery-io">I/O SCHEDULER</label>
+    <select id="recovery-io" disabled>
+      <option value="keep">Keep current</option>
+    </select>
+
+    <button type="button" id="recovery-apply" disabled>
+      Apply recovery settings
+    </button>
+  </div>
+
+  <p class="recovery-warning">
+    Manual emergency control. Changes are not saved for the next boot.
+  </p>
+
+  <div class="recovery-status" id="recovery-status" role="status">
+    No recovery changes applied.
+  </div>
 </div>
-<div class="kicker">H E A R T H R O O T  ·  P R O J E C T</div><div class="topline"><span class="ornament">✦</span><span id="season-name">Moonlit Cottage</span></div><h1>Hearthroot<br><em>Control</em></h1><p class="tagline">A quiet place to tend your kernel.</p></header><div class="breathing-space" aria-hidden="true"></div><section class="glass status" aria-label="Device information"><div><small>DEVICE</small><strong id="device-model">Detecting...</strong><span id="device-codename">Waiting for device</span></div><div class="status-side"><small>INTERFACE</small><strong>Visual preview</strong><span>No kernel changes</span></div></section><section class="glass profiles"><div class="section-heading"><div><small>THE KERNEL GARDEN</small><h2>Choose your path</h2></div><span class="tiny-ornament">❧</span></div><div class="choices" role="group" aria-label="Preview profiles"><button type="button" class="choice" data-profile="Balanced" aria-pressed="false"><span class="sigil">Ⅰ</span><strong>Balanced</strong><span>Gentle harmony</span></button><button type="button" class="choice selected" data-profile="Native" aria-pressed="true"><span class="sigil">Ⅱ</span><strong>Native</strong><span>Original roots</span></button><button type="button" class="choice" data-profile="Battery Saver" aria-pressed="false"><span class="sigil">Ⅲ</span><strong>Battery Saver</strong><span>Quiet endurance</span></button><button type="button" class="choice" data-profile="Performance" aria-pressed="false"><span class="sigil">Ⅳ</span><strong>Performance</strong><span>Full potential</span></button><button type="button" class="choice" data-profile="Experimental" aria-pressed="false"><span class="sigil">Ⅴ</span><strong>Experimental</strong><span>Beyond the grove</span></button></div><div class="notice" role="status" id="preview-status">Native selected. No changes applied.</div>
+</div>
+<div class="kicker">H E A R T H R O O T  ·  P R O J E C T</div><div class="topline"><span class="ornament">✦</span><span id="season-name">Moonlit Cottage</span></div><h1>Hearthroot<br><em>Control</em></h1><p class="tagline">A quiet place to tend your kernel.</p></header><div class="breathing-space" aria-hidden="true"></div><section class="glass status" aria-label="Device information"><div><small>DEVICE</small><strong id="device-model">Detecting...</strong><span id="device-codename">Waiting for device</span></div><div class="status-side"><small>INTERFACE</small><strong>Visual preview</strong><span>No kernel changes</span></div></section><section class="glass profiles"><div class="section-heading"><div><small>THE KERNEL GARDEN</small><h2>Choose your path</h2></div><span class="tiny-ornament">❧</span></div><div class="choices" role="group" aria-label="Preview profiles"><button type="button" class="choice" data-profile="Balanced" aria-pressed="false"><span class="sigil">Ⅰ</span><strong>Balanced</strong><span>Gentle harmony</span></button><button type="button" class="choice selected" data-profile="Native" aria-pressed="true"><span class="sigil">Ⅱ</span><strong>Native</strong><span>Original roots</span></button><button type="button" class="choice" data-profile="Battery Saver" aria-pressed="false"><span class="sigil">Ⅲ</span><strong>Battery Saver</strong><span>Quiet endurance</span></button><button type="button" class="choice" data-profile="Performance" aria-pressed="false"><span class="sigil">Ⅳ</span><strong>Performance</strong><span>Full potential</span></button><button type="button" class="choice" data-profile="Experimental" aria-pressed="false"><span class="sigil">Ⅴ</span><strong>Experimental</strong><span>Beyond the grove</span></button></div>
 <div class="profile-details" id="profile-details">
   <div class="profile-details-heading">
     <small>PROFILE DETAILS</small>
@@ -95,7 +132,7 @@
   </div>
 
   <p class="profile-details-note" id="profile-details-note">
-    CPU/GPU frequency limits and thermal settings remain unchanged.
+    CPU/GPU frequency limits remain unchanged. Thermal behavior is managed by Xiaomi Parts.
   </p>
 </div>
 
@@ -129,7 +166,29 @@
 </div>
 
 
-<div class="profile-controls"><div class="profile-current"><small>ACTIVE KERNEL CONFIGURATION</small><strong id="profile-current-state">Not checked yet</strong><span id="profile-current-detail">Waiting for BakaSU</span></div><div class="profile-buttons"><button type="button" id="profile-refresh">Refresh status</button><button type="button" id="profile-apply" disabled>Apply profile</button></div></div></section>
+
+<div class="companion-status-panel" role="status" aria-live="polite">
+  <div class="companion-status-heading">
+    <div>
+      <small>XIAOMI PARTS INTEGRATION</small>
+      <strong>Hearthroot Companion</strong>
+    </div>
+    <span id="companion-status" class="companion-indicator">
+      Checking...
+    </span>
+  </div>
+  <p id="companion-detail">
+    Checking communication with Xiaomi Parts.
+  </p>
+</div>
+
+<div class="profile-controls"><div class="profile-current"><small>ACTIVE KERNEL CONFIGURATION</small><strong id="profile-current-state">Not checked yet</strong><span id="profile-current-detail">Waiting for BakaSU</span></div><div class="apply-progress" id="apply-progress"
+     role="status" aria-live="polite" hidden>
+  <div class="apply-progress-track">
+    <div class="apply-progress-fill" id="apply-progress-fill"></div>
+  </div>
+  <div class="apply-progress-message" id="apply-progress-message"></div>
+</div><div class="profile-buttons"><button type="button" id="profile-refresh">Refresh status</button><button type="button" id="profile-apply" disabled>Apply profile</button></div></div></section>
 
 <footer><span>✧ &nbsp; Grown with care &nbsp; ✧</span><small>HEARTHROOT CONTROL · ALPHA PREVIEW</small></footer>
 </main>

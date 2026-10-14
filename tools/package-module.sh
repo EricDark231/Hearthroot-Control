@@ -10,7 +10,7 @@ done
 for file in service.sh customize.sh scripts/*.sh; do sh -n "$file"; done
 APK='companion-src/app/build/outputs/apk/debug/app-debug.apk'
 if command -v aapt >/dev/null 2>&1; then
-  aapt dump badging "$APK" | grep -q "package: name='dev.hearthroot.companion' versionCode='11' versionName='0.3.7-alpha'" || { echo 'Companion APK version mismatch'; exit 1; }
+  aapt dump badging "$APK" | grep -q "package: name='dev.hearthroot.companion' versionCode='12' versionName='0.3.8-alpha'" || { echo 'Companion APK version mismatch'; exit 1; }
 fi
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT

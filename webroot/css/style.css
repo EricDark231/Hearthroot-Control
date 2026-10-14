@@ -1995,3 +1995,273 @@ h3,
 }
 
 /* Hearthroot Floating Settings END */
+
+
+/* HEARTHROOT_COMPANION_STATUS_V1 */
+.companion-status-panel {
+  margin: 18px 0;
+  padding: 14px 15px;
+  border: 1px solid rgba(180, 165, 130, 0.22);
+  border-radius: 12px;
+  background: rgba(130, 115, 90, 0.08);
+}
+
+.companion-status-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.companion-status-heading small {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  opacity: 0.68;
+}
+
+.companion-status-heading strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.companion-indicator {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid rgba(180, 165, 130, 0.26);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.78;
+}
+
+.companion-indicator[data-state="connected"] {
+  border-color: rgba(130, 170, 125, 0.42);
+  background: rgba(110, 155, 105, 0.12);
+  opacity: 0.92;
+}
+
+.companion-indicator[data-state="unavailable"] {
+  border-color: rgba(180, 145, 115, 0.34);
+  background: rgba(165, 125, 95, 0.09);
+}
+
+.companion-status-panel > p {
+  margin: 9px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  opacity: 0.68;
+}
+
+@media (max-width: 600px) {
+  .companion-status-heading {
+    align-items: flex-start;
+  }
+
+  .companion-indicator {
+    font-size: 0.64rem;
+  }
+}
+
+/* HEARTHROOT_RECOVERY_CONTROLS_V1 */
+.recovery-controls {
+  margin-top: 2px;
+}
+
+.recovery-heading {
+  margin-bottom: 14px;
+}
+
+.recovery-heading small,
+.recovery-fields label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  opacity: 0.72;
+}
+
+.recovery-heading strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.98rem;
+  font-weight: 650;
+}
+
+.recovery-heading p {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  opacity: 0.72;
+}
+
+.recovery-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.recovery-fields label:not(:first-child) {
+  margin-top: 4px;
+}
+
+.recovery-fields select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid rgba(180, 165, 130, 0.30);
+  border-radius: 10px;
+  background: var(--surface, rgba(255, 255, 255, 0.08));
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.recovery-fields button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 6px;
+  padding: 9px 12px;
+  border: 1px solid rgba(180, 165, 130, 0.34);
+  border-radius: 10px;
+  background: rgba(130, 115, 90, 0.16);
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.recovery-fields button:not(:disabled):hover {
+  background: rgba(130, 115, 90, 0.24);
+  border-color: rgba(180, 165, 130, 0.48);
+}
+
+.recovery-fields button:disabled,
+.recovery-fields select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.recovery-warning {
+  margin: 11px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  opacity: 0.62;
+}
+
+.recovery-status {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(180, 165, 130, 0.16);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  opacity: 0.76;
+}
+
+@media (max-width: 600px) {
+  .recovery-heading p {
+    font-size: 0.76rem;
+  }
+
+  .recovery-fields select,
+  .recovery-fields button {
+    min-height: 42px;
+  }
+}
+
+
+/* Hearthroot compact Apply progress */
+.apply-progress {
+  display: grid;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid rgba(174, 223, 183, .18);
+  border-radius: 12px;
+  background: rgba(12, 22, 24, .12);
+  animation: apply-panel-in .22s ease both;
+}
+
+.apply-progress[hidden] {
+  display: none !important;
+}
+
+.apply-progress-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(174, 223, 183, .15);
+}
+
+.apply-progress-fill {
+  height: 100%;
+  width: 35%;
+  border-radius: inherit;
+  background: #b8dfbd;
+  animation: apply-indeterminate 1.4s ease-in-out infinite;
+}
+
+.apply-progress[data-state="success"] .apply-progress-fill {
+  animation: none;
+  width: 100%;
+  transition: width .3s ease;
+}
+
+.apply-progress[data-state="error"] .apply-progress-fill {
+  animation: none;
+  background: #d9a49b;
+}
+
+.apply-progress-message {
+  color: #d5e5d4;
+  font: 11px/1.5 var(--font-interface, system-ui, sans-serif);
+  overflow-wrap: anywhere;
+}
+
+.apply-message-enter {
+  animation: apply-message-in .2s ease both;
+}
+
+@keyframes apply-panel-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes apply-message-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes apply-indeterminate {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(115%); }
+  100% { transform: translateX(310%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apply-progress,
+  .apply-progress-fill,
+  .apply-message-enter {
+    animation: none !important;
+  }
+}
+
+
+/* Static states: no fake ongoing activity */
+.apply-progress[data-state="info"] .apply-progress-fill,
+.apply-progress[data-state="error"] .apply-progress-fill {
+  animation: none;
+  transform: none;
+  width: 100%;
+}
+
+.apply-progress[data-state="info"] .apply-progress-fill {
+  background: rgba(174, 223, 183, .45);
+}

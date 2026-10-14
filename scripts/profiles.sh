@@ -219,8 +219,9 @@ rollback() {
         path="${record%:*}"
         value="${record##*:}"
 
-        if ! printf '%s\n' "$value" > "$path"; then
-            echo "Restore failed: $path" >&2
+        if ! printf '%s\n' "$value" > "$path" ||
+           [ "$(current_scheduler "$path")" != "$value" ]; then
+            echo "WARNING: I/O restore failed: $path" >&2
             restore_failed=1
         fi
     done
@@ -229,14 +230,20 @@ rollback() {
         path="${record%:*}"
         value="${record##*:}"
 
-        if ! printf '%s\n' "$value" > "$path"; then
-            echo "Restore failed: $path" >&2
+        if ! printf '%s\n' "$value" > "$path" ||
+           [ "$(cat "$path" 2>/dev/null)" != "$value" ]; then
+            echo "WARNING: CPU restore failed: $path" >&2
             restore_failed=1
         fi
     done
 
-    [ "$restore_failed" -eq 0 ] ||
-        echo "WARNING: Some values could not be restored" >&2
+    if [ "$restore_failed" -ne 0 ]; then
+        echo "WARNING: Kernel rollback incomplete" >&2
+        return 1
+    fi
+
+    echo "Kernel rollback completed" >&2
+    return 0
 }
 
 # HEARTHROOT_OFFLINE_POLICY_FIX_V1
@@ -384,7 +391,210 @@ apply_profile() {
     show_status
 }
 
+
+# Independent I/O control. Never modifies CPU governors.
+apply_io_only() {
+    target_io="$1"
+
+    [ "$(id -u)" = "0" ] ||
+        error "Root permission required"
+
+    case "$target_io" in
+        none|kyber|mq-deadline|bfq|adios) ;;
+        *) error "Invalid I/O scheduler: $target_io" ;;
+    esac
+
+    io_only_snapshot=""
+    io_only_count=0
+
+    # Validate and capture before modifying anything.
+    for disk in "$IO_BASE"/sd*; do
+        path="$disk/queue/scheduler"
+        supports_io_profiles "$path" || continue
+
+        available_io="$(tr '[]' '  ' < "$path")" ||
+            error "Cannot read schedulers for ${disk##*/}"
+
+        case " $available_io " in
+            *" $target_io "*) ;;
+            *) error "${disk##*/} does not support $target_io" ;;
+        esac
+
+        current="$(current_scheduler "$path")"
+        [ -n "$current" ] ||
+            error "Cannot read scheduler for ${disk##*/}"
+
+        io_only_snapshot="$io_only_snapshot $path:$current"
+        io_only_count=$((io_only_count + 1))
+    done
+
+    [ "$io_only_count" -gt 0 ] ||
+        error "No compatible UFS scheduler found"
+
+    # Write and verify; restore all captured values on failure.
+    for record in $io_only_snapshot; do
+        path="${record%:*}"
+
+        if ! printf '%s\n' "$target_io" > "$path" ||
+           [ "$(current_scheduler "$path")" != "$target_io" ]; then
+            echo "ERROR: I/O-only application failed" >&2
+
+            for saved in $io_only_snapshot; do
+                saved_path="${saved%:*}"
+                saved_value="${saved##*:}"
+
+                if ! printf '%s\n' "$saved_value" > "$saved_path" ||
+                   [ "$(current_scheduler "$saved_path")" != "$saved_value" ]; then
+                    echo "WARNING: I/O rollback failed: $saved_path" >&2
+                fi
+            done
+
+            return 1
+        fi
+    done
+
+    echo "Applied I/O only: $target_io"
+}
+
+# Emergency kernel-only recovery control.
+# "keep" leaves that component completely untouched.
+apply_recovery() {
+    target_cpu="${1:-keep}"
+    target_io="${2:-keep}"
+
+    [ "$(id -u)" = "0" ] ||
+        error "Root permission required"
+
+    [ "$target_cpu" != "keep" ] || [ "$target_io" != "keep" ] ||
+        error "Recovery requested no changes"
+
+    # I/O-only recovery reuses the transactional implementation while
+    # preserving the common Recovery success contract for the WebUI.
+    if [ "$target_cpu" = "keep" ]; then
+        if apply_io_only "$target_io"; then
+            echo "RECOVERY=OK"
+            return 0
+        fi
+        return 1
+    fi
+
+    case "$target_cpu" in
+        ""|*[!a-zA-Z0-9_-]*)
+            error "Invalid CPU governor name"
+            ;;
+    esac
+
+    available_options="$(list_options)" || exit 1
+    available_cpu="$(printf '%s\n' "$available_options" |
+        sed -n 's/^CPU=//p')"
+
+    case " $available_cpu " in
+        *" $target_cpu "*) ;;
+        *) error "Unsupported CPU governor: $target_cpu" ;;
+    esac
+
+    recovery_cpu_snapshot=""
+
+    # Validate and capture readable/online CPU policies before writing.
+    for policy in "$CPU_BASE"/policy*; do
+        path="$policy/scaling_governor"
+        [ -f "$path" ] || continue
+
+        governor_file="$policy/scaling_available_governors"
+        [ -f "$governor_file" ] ||
+            error "Governor availability missing on ${policy##*/}"
+
+        available="$(cat "$governor_file" 2>/dev/null)" || {
+            if policy_is_offline "$policy"; then
+                echo "WARNING: Recovery skipping offline ${policy##*/}" >&2
+                continue
+            fi
+            error "Cannot read governors on ${policy##*/}"
+        }
+
+        [ -n "$available" ] || {
+            if policy_is_offline "$policy"; then
+                echo "WARNING: Recovery skipping offline ${policy##*/}" >&2
+                continue
+            fi
+            error "Empty governor list on ${policy##*/}"
+        }
+
+        case " $available " in
+            *" $target_cpu "*) ;;
+            *) error "${policy##*/} does not support $target_cpu" ;;
+        esac
+
+        current="$(cat "$path" 2>/dev/null)" || {
+            if policy_is_offline "$policy"; then
+                echo "WARNING: Recovery snapshot skipped for offline ${policy##*/}" >&2
+                continue
+            fi
+            error "Cannot read $path"
+        }
+
+        [ -n "$current" ] ||
+            error "Empty governor on ${policy##*/}"
+
+        recovery_cpu_snapshot="$recovery_cpu_snapshot $path:$current"
+    done
+
+    [ -n "$recovery_cpu_snapshot" ] ||
+        error "No readable CPU policy available for recovery"
+
+    # Apply CPU and roll back all captured CPU values if anything fails.
+    for record in $recovery_cpu_snapshot; do
+        path="${record%:*}"
+
+        if ! printf '%s\n' "$target_cpu" > "$path" ||
+           [ "$(cat "$path" 2>/dev/null)" != "$target_cpu" ]; then
+            echo "ERROR: CPU recovery application failed" >&2
+
+            for saved in $recovery_cpu_snapshot; do
+                saved_path="${saved%:*}"
+                saved_value="${saved##*:}"
+
+                if ! printf '%s\n' "$saved_value" > "$saved_path" ||
+                   [ "$(cat "$saved_path" 2>/dev/null)" != "$saved_value" ]; then
+                    echo "WARNING: CPU recovery rollback failed: $saved_path" >&2
+                fi
+            done
+
+            return 1
+        fi
+    done
+
+    echo "Applied recovery CPU: $target_cpu"
+
+    # Optional I/O stage. If it fails, restore CPU as well.
+    if [ "$target_io" != "keep" ]; then
+        if ! apply_io_only "$target_io"; then
+            echo "WARNING: I/O recovery failed; restoring CPU state" >&2
+
+            for saved in $recovery_cpu_snapshot; do
+                saved_path="${saved%:*}"
+                saved_value="${saved##*:}"
+
+                if ! printf '%s\n' "$saved_value" > "$saved_path" ||
+                   [ "$(cat "$saved_path" 2>/dev/null)" != "$saved_value" ]; then
+                    echo "WARNING: CPU recovery rollback failed: $saved_path" >&2
+                fi
+            done
+
+            return 1
+        fi
+    fi
+
+    echo "RECOVERY=OK"
+}
+
 case "${1:-}" in
+    recovery)
+        apply_recovery "${2:-keep}" "${3:-keep}"
+        ;;
+    io-only)
+        apply_io_only "${2:-}"
+        ;;
     options)
         list_options
         ;;

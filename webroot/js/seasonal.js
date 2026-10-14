@@ -133,7 +133,10 @@
 
     const theme = THEMES[effective] || THEMES.default;
 
-    document.documentElement.dataset.season = effective;
+    // Avoid unnecessary seasonal background updates.
+    if (document.documentElement.dataset.season !== effective) {
+      document.documentElement.dataset.season = effective;
+    }
 
     const name = document.getElementById("season-name");
     const tagline = document.querySelector(".tagline");
