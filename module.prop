@@ -1,6 +1,6 @@
 id=hearthroot.control
 name=Hearthroot Control
-version=v0.8.8-alpha
-versionCode=18
+version=v1.0.0
+versionCode=19
 author=EricDark231
 description=Hearthroot Kernel CPU and I/O profiles with optional LSPosed Xiaomi Parts Companion.

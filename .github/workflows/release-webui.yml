@@ -79,9 +79,15 @@ jobs:
             exit 1
           fi
           echo 'Companion signing certificate verified successfully'
+      - name: Run recovery regression tests
+        run: |
+          set -euo pipefail
+          python3 tests/test-xiaomi-recovery.py
+          python3 tests/test-recovery-order.py
+          python3 tests/test-integrated-recovery.py
       - name: Package module
         run: bash tools/package-module.sh
-      - name: Publish prerelease only on matching tag
+      - name: Publish stable release only on matching tag
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
@@ -89,7 +95,7 @@ jobs:
           set -euo pipefail
           VERSION="$(sed -n 's/^version=//p' module.prop | head -1)"
           [[ "$GITHUB_REF_NAME" == "$VERSION" ]] || { echo 'Tag/version mismatch'; exit 1; }
-          gh release create "$VERSION" "dist/Hearthroot-Control-${VERSION}.zip" --title "Hearthroot Control $VERSION" --notes-file "RELEASE_NOTES-${VERSION}.md" --prerelease
+          gh release create "$VERSION" "dist/Hearthroot-Control-${VERSION}.zip" --title "Hearthroot Control $VERSION" --notes-file "RELEASE_NOTES-${VERSION}.md"
       - uses: actions/upload-artifact@v4
         with:
           name: Hearthroot-Control-Signed
