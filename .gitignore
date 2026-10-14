@@ -25,3 +25,14 @@
 /companion-src/.gradle/
 /companion-src/**/build/
 /companion-src/local.properties
+
+# Local development backups
+*.backup-*
+
+# Python test artifacts
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Accidental local command output
+/sembleDebug --no-daemon
